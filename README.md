@@ -36,7 +36,7 @@
     ```
 
 4. [Gazebo Fortress](https://gazebosim.org/docs/fortress/install_ubuntu)
-or by default as the recommended pairing for ROS2 Humble via the command:
+5. `ros-gz` package which includes the necessary bridges and interfaces between ROS2 Humble and Gazebo Fortress
     ```bash
     sudo apt-get install ros-humble-ros-gz
     ```
@@ -96,5 +96,10 @@ ros2 topic echo /TOPIC
 
 ## Sources
 - [Gazebo fortress docs](https://gazebosim.org/docs/all/getstarted)
+- [Gazebo Sim 6.16 API Reference](https://gazebosim.org/api/sim/6/)
 - [ros_gz_project_template](https://gazebosim.org/docs/fortress/ros_gz_project_template_guide)
 - [UR3e description](https://github.com/ros-industrial/universal_robot/tree/noetic-devel/ur_description/meshes/ur3e)
+- [SDFormat](http://sdformat.org/spec?elem=sdf&ver=1.8)
+
+## Gotchas
+- ufw firewall must be disabled for Gazebo to run
