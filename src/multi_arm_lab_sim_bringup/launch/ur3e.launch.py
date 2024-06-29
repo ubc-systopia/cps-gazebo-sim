@@ -57,14 +57,21 @@ def generate_launch_description():
         ]
     )
     # ros->ign,  joint controller for ur3e
-    joint_controller=Node(package='robot_state_publisher', 
-               executable='joint_controller',
-               name="ur3e_joint_controller",
-               parameters=[{"joint_names": joint_names_list},
-                           {"ign_joint_topics": ign_joint_topics_list},
-                           {"rate":200},
-                          ],
-               output='screen')
+    #joint_controller=Node(package='ur_controllers', 
+    #           executable='joint_controller',
+    #           name="ur3e_joint_controller",
+    #           parameters=[{"joint_names": joint_names_list},
+    #                       {"ign_joint_topics": ign_joint_topics_list},
+    #                       {"rate":200},
+    #                      ],
+    #           output='screen')
+    
+    joint_controller=Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[LaunchConfiguration("initial_joint_controller"), "-c", "/controller_manager"],
+        condition=IfCondition(LaunchConfiguration('start_joint_controller')),
+    )
     
     # # Bridge ROS topics and Gazebo messages for establishing communication
     # bridge = Node(
@@ -105,6 +112,10 @@ def generate_launch_description():
                               description='Open RViz.'),
         bridge,
         robot_state_publisher,
-        #joint_controller,
+        DeclareLaunchArgument('start_joint_controller', default_value='true',
+                            description='Enable headless mode for robot control'),
+        DeclareLaunchArgument("initial_joint_controller", default_value="joint_trajectory_controller",
+                            description="Robot controller to start."),
+        joint_controller,
         rviz
     ])

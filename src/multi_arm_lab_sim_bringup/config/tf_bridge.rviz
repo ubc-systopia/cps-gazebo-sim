@@ -68,7 +68,7 @@ Visualization Manager:
           Value: true
         fixed_frame/wrist_3_link:
           Value: true
-      Marker Scale: 1
+      Marker Scale: 0.25
       Name: TF
       Show Arrows: true
       Show Axes: true
