@@ -76,12 +76,26 @@ def generate_launch_description():
     #     }],
     #     output='screen'
     # )
-    
+    bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            '/world/default/model/ur3e/joint_state@'
+            'sensor_msgs/msg/JointState[gz.msgs.Model',
+            '/model/ur3e/pose@'
+            'tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
+        ],
+        remappings=[
+            ('/model/ur3e/pose', '/tf'),
+            ('/world/default/model/ur3e/joint_state', '/joint_states')
+        ]
+    )
+
     # Visualize in RViz
     rviz = Node(
       package='rviz2',
       executable='rviz2',
-      arguments=['-d', os.path.join(pkg_project_bringup, 'config', 'ur3e.rviz')],
+      arguments=['-d', os.path.join(pkg_project_bringup, 'config', 'tf_bridge.rviz')],
       condition=IfCondition(LaunchConfiguration('rviz'))
     )
 
@@ -89,7 +103,7 @@ def generate_launch_description():
         gz_sim,
         DeclareLaunchArgument('rviz', default_value='true',
                               description='Open RViz.'),
-        #bridge,
+        bridge,
         robot_state_publisher,
         #joint_controller,
         rviz

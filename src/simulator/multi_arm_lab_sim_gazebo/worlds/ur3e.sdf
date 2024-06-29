@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sdf version="1.8">
-  <world name="demo">
+  <world name="default">
     <plugin
       filename="ignition-gazebo-physics-system"
       name="gz::sim::systems::Physics">
@@ -27,112 +27,75 @@
       name="multi_arm_lab_sim_gazebo::FullSystem">
     </plugin>
 
-	<light name="sun" type="directional">
-      <cast_shadows>true</cast_shadows>
-      <pose>0 0 10 0 0 0</pose>
-      <diffuse>0.8 0.8 0.8 1</diffuse>
-      <specular>0.2 0.2 0.2 1</specular>
-      <attenuation>
-        <range>1000</range>
-        <constant>0.9</constant>
-        <linear>0.01</linear>
-        <quadratic>0.001</quadratic>
-      </attenuation>
-      <direction>-0.5 0.1 -0.9</direction>
-    </light>
+    <gui>
+      <camera name="user_camera">
+        <pose>0.846027 1.34839 1.39925 0 0.314 -2.35919</pose>
+        <view_controller>orbit</view_controller>
+        <projection_type>perspective</projection_type>
+      </camera>
+    </gui>
 
-    <model name="ground_plane">
-      <static>true</static>
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <plane>
-              <normal>0 0 1</normal>
-              <size>100 100</size>
-            </plane>
-          </geometry>
-          <material>
-            <ambient>0.8 0.8 0.8 1</ambient>
-            <diffuse>0.8 0.8 0.8 1</diffuse>
-            <specular>0.8 0.8 0.8 1</specular>
-          </material>
-        </visual>
-      </link>
+    <scene>
+      <ambient>0.5 0.5 0.5 1</ambient>
+      <background>0.5 0.5 0.5 1</background>
+    </scene>
+
+    <light name="sun" type="directional">
+        <cast_shadows>true</cast_shadows>
+        <pose>0 0 10 0 0 0</pose>
+        <diffuse>0.8 0.8 0.8 1</diffuse>
+        <specular>0.2 0.2 0.2 1</specular>
+        <attenuation>
+          <range>1000</range>
+          <constant>0.9</constant>
+          <linear>0.01</linear>
+          <quadratic>0.001</quadratic>
+        </attenuation>
+        <direction>-0.5 0.1 -0.9</direction>
+      </light>
+
+      <model name="ground_plane">
+        <static>true</static>
+        <link name="link">
+          <collision name="collision">
+            <geometry>
+              <plane>
+                <normal>0 0 1</normal>
+                <size>100 100</size>
+              </plane>
+            </geometry>
+          </collision>
+          <visual name="visual">
+            <geometry>
+              <plane>
+                <normal>0 0 1</normal>
+                <size>100 100</size>
+              </plane>
+            </geometry>
+            <material>
+              <ambient>0.8 0.8 0.8 1</ambient>
+              <diffuse>0.8 0.8 0.8 1</diffuse>
+              <specular>0.8 0.8 0.8 1</specular>
+            </material>
+          </visual>
+        </link>
+      </model>
+
+    <model name="ur3e">
+      <self_collide>true</self_collide>
+      <include merge="true">
+        <uri>package://multi_arm_lab_sim_description/models/ur3e</uri>
+        <pose>0 0 0.35 0 0 0</pose>
+      </include>
+      <!--joint state publisher-->
+      <plugin filename="ignition-gazebo-joint-state-publisher-system" name="ignition::gazebo::systems::JointStatePublisher">
+        <joint_name>shoulder_pan_joint</joint_name>
+        <joint_name>shoulder_lift_joint</joint_name>
+        <joint_name>elbow_joint</joint_name>
+        <joint_name>wrist_1_joint</joint_name>
+        <joint_name>wrist_2_joint</joint_name>
+        <joint_name>wrist_3_joint</joint_name>
+      </plugin>
     </model>
-
-	<model name="ur3e">
-		<self_collide>true</self_collide>
-    <include merge="true">
-      <uri>package://multi_arm_lab_sim_description/models/ur3e</uri>
-      <pose>0 0 0.35 0 0 0</pose>
-    </include>
-    
-		<!--plugins for ur-->
-		<plugin filename="ignition-gazebo-joint-position-controller-system" name="ignition::gazebo::systems::JointPositionController">
-			<joint_name>shoulder_pan_joint</joint_name>
-			<p_gain>1000.0</p_gain>
-			<i_gain>10.0</i_gain>
-			<d_gain>150.0</d_gain>
-			<i_max>1.0</i_max>
-			<i_min>-1.0</i_min>
-		</plugin>
-		<plugin filename="ignition-gazebo-joint-position-controller-system" name="ignition::gazebo::systems::JointPositionController">
-			<joint_name>shoulder_lift_joint</joint_name>
-			<p_gain>5000.0</p_gain>
-			<i_gain>10.0</i_gain>
-			<d_gain>150.0</d_gain>
-			<i_max>50.0</i_max>
-			<i_min>-50.0</i_min>
-		</plugin>
-		<plugin filename="ignition-gazebo-joint-position-controller-system" name="ignition::gazebo::systems::JointPositionController">
-			<joint_name>elbow_joint</joint_name>
-			<p_gain>1000.0</p_gain>
-			<i_gain>10.0</i_gain>
-			<d_gain>150.0</d_gain>
-			<i_max>25.0</i_max>
-			<i_min>-25.0</i_min>
-		</plugin>
-		<plugin filename="ignition-gazebo-joint-position-controller-system" name="ignition::gazebo::systems::JointPositionController">
-			<joint_name>wrist_1_joint</joint_name>
-			<p_gain>20.0</p_gain>
-			<i_gain>1.0</i_gain>
-			<d_gain>0.2</d_gain>
-			<i_max>1.0</i_max>
-			<i_min>-1.0</i_min>
-		</plugin>
-		<plugin filename="ignition-gazebo-joint-position-controller-system" name="ignition::gazebo::systems::JointPositionController">
-			<joint_name>wrist_2_joint</joint_name>
-			<p_gain>20.0</p_gain>
-			<i_gain>1.0</i_gain>
-			<d_gain>0.2</d_gain>
-			<i_max>1.0</i_max>
-			<i_min>-1.0</i_min>
-		</plugin>
-		<plugin filename="ignition-gazebo-joint-position-controller-system" name="ignition::gazebo::systems::JointPositionController">
-			<joint_name>wrist_3_joint</joint_name>
-			<p_gain>20.0</p_gain>
-			<i_gain>1.0</i_gain>
-			<d_gain>0.2</d_gain>
-			<i_max>1.0</i_max>
-			<i_min>-1.0</i_min>
-		</plugin>
-		<!--joint state publisher-->
-		<plugin filename="ignition-gazebo-joint-state-publisher-system" name="ignition::gazebo::systems::JointStatePublisher">
-			<joint_name>shoulder_pan_joint</joint_name>
-			<joint_name>shoulder_lift_joint</joint_name>
-			<joint_name>elbow_joint</joint_name>
-			<joint_name>wrist_1_joint</joint_name>
-			<joint_name>wrist_2_joint</joint_name>
-			<joint_name>wrist_3_joint</joint_name>
-		</plugin>
-	</model>
   </world>
 </sdf>
