@@ -11,7 +11,10 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 
 from launch_ros.actions import Node
+from launch_ros.substitutions import FindPackageShare
 
+
+#def launch_setup():
 def generate_launch_description():
 
     # Setup project paths
@@ -57,14 +60,14 @@ def generate_launch_description():
         ]
     )
     # ros->ign,  joint controller for ur3e
-    #joint_controller=Node(package='ur_controllers', 
-    #           executable='joint_controller',
-    #           name="ur3e_joint_controller",
-    #           parameters=[{"joint_names": joint_names_list},
-    #                       {"ign_joint_topics": ign_joint_topics_list},
-    #                       {"rate":200},
-    #                      ],
-    #           output='screen')
+    joint_controller=Node(package='ur_controllers', 
+               executable='joint_controller',
+               name="ur3e_joint_controller",
+               parameters=[{"joint_names": joint_names_list},
+                           {"ign_joint_topics": ign_joint_topics_list},
+                           {"rate":200},
+                          ],
+               output='screen')
     
     joint_controller=Node(
         package="controller_manager",
@@ -97,12 +100,18 @@ def generate_launch_description():
             ('/world/default/model/ur3e/joint_state', '/joint_states')
         ]
     )
+    
+    rviz_config_file = PathJoinSubstitution(
+        [FindPackageShare('ur_description'), "rviz", "view_robot.rviz"]
+    )
 
     # Visualize in RViz
     rviz = Node(
       package='rviz2',
       executable='rviz2',
-      arguments=['-d', os.path.join(pkg_project_bringup, 'config', 'tf_bridge.rviz')],
+      name="rviz2",
+      output="log",
+      arguments=['-d', rviz_config_file],
       condition=IfCondition(LaunchConfiguration('rviz'))
     )
 
