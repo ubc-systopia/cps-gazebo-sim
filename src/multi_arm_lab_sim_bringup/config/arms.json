@@ -1,0 +1,32 @@
+{
+    "robot_arms": [
+        {
+            "name": "arm1",
+            "type": "ur3e",
+            "x_pos": "-1.5",
+            "y_pos": "-1.5",
+            "z_pos": "0.0"
+        },
+        {
+            "name": "arm2",
+            "type": "ur3e",
+            "x_pos": "-1.5",
+            "y_pos": "1.5",
+            "z_pos": "0.0"
+        },
+        {
+            "name": "arm3",
+            "type": "ur3e",
+            "x_pos": "1.5",
+            "y_pos": "-1.5",
+            "z_pos": "0.0"
+        },
+        {
+            "name": "arm4",
+            "type": "ur3e",
+            "x_pos": "1.5",
+            "y_pos": "-1.5",
+            "z_pos": "0.0"
+        }
+    ]
+}
