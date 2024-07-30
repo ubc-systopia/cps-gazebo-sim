@@ -152,6 +152,7 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
             "-x", robot_arm["x"],
             "-y", robot_arm["y"],
             "-z", robot_arm["z"],
+            "-Y", robot_arm["Y"],
         ],
     )
     
@@ -259,9 +260,10 @@ def launch_setup(context, *args, **kwargs):
             "prefix": prefix,
             "start_joint_controller": start_joint_controller,
             "initial_joint_controllers": initial_joint_controllers,
-            "x": arm["x_pos"],
-            "y": arm["y_pos"],
-            "z": arm["z_pos"],
+            "x": arm["x"],
+            "y": arm["y"],
+            "z": arm["z"],
+            "Y": arm["Y"],
             "name": arm["name"], # assumption that arm names are unique
             #"moveit_config_package": moveit_config_package
         }
