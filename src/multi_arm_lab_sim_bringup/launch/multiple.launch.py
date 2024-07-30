@@ -85,6 +85,11 @@ def launch_setup(context, *args, **kwargs):
         [FindPackageShare(description_package), "rviz", "view_robot.rviz"]
     )
 
+    nodes_to_start = [
+        gz_launch_description_with_gui,
+        gz_launch_description_without_gui,
+    ]
+
     # Read the json file with robot arms
     arms_file_path = os.path.join(pkg_project_bringup, "config", "arms.json")
     with open(arms_file_path, "r") as openfile:
@@ -93,123 +98,131 @@ def launch_setup(context, *args, **kwargs):
         raise Exception("No robot arms configuration found") 
     else:
         print(arms)
-    
-    arm = arms[0]
 
-    robot_description_content = Command(
-        [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
-            " ",
-            PathJoinSubstitution(
-                [FindPackageShare(description_package), "urdf", description_file]
+    for arm in arms:
+        namespace = f'/{arm["name"]}'
+        robot_description_content = Command(
+            [
+                PathJoinSubstitution([FindExecutable(name="xacro")]),
+                " ",
+                PathJoinSubstitution(
+                    [FindPackageShare(description_package), "urdf", description_file]
+                ),
+                " ",
+                "safety_limits:=",
+                safety_limits,
+                " ",
+                "safety_pos_margin:=",
+                safety_pos_margin,
+                " ",
+                "safety_k_position:=",
+                safety_k_position,
+                " ",
+                "name:=",
+                "ur", # name here doesn't matter i think, since it doesn't reflect in gazebo entity name
+                " ",
+                "ur_type:=",
+                arm["type"],
+                " ",
+                "prefix:=",
+                prefix,
+                " ",
+                "sim_ignition:=true",
+                " ",
+                "simulation_controllers:=",
+                initial_joint_controllers,
+            ]
+        )
+        robot_description = {"robot_description": robot_description_content}
+
+        robot_state_publisher_node = Node(
+            package="robot_state_publisher",
+            executable="robot_state_publisher",
+            namespace=namespace,
+            output="both",
+            parameters=[{"use_sim_time": True}, robot_description],
+        )
+
+        rviz_node = Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            output="log",
+            arguments=["-d", rviz_config_file],
+            condition=IfCondition(launch_rviz),
+        )
+
+        joint_state_broadcaster_spawner = Node(
+            package="controller_manager",
+            executable="spawner",
+            arguments=["joint_state_broadcaster", "-c", f'{namespace}/controller_manager'],
+        )
+
+        # Delay rviz start after `joint_state_broadcaster`
+        delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=joint_state_broadcaster_spawner,
+                on_exit=[rviz_node],
             ),
-            " ",
-            "safety_limits:=",
-            safety_limits,
-            " ",
-            "safety_pos_margin:=",
-            safety_pos_margin,
-            " ",
-            "safety_k_position:=",
-            safety_k_position,
-            " ",
-            "name:=",
-            "ur", # name here doesn't matter i think, since it doesn't reflect in gazebo entity name
-            " ",
-            "ur_type:=",
-            arm["type"],
-            " ",
-            "prefix:=",
-            prefix,
-            " ",
-            "sim_ignition:=true",
-            " ",
-            "simulation_controllers:=",
-            initial_joint_controllers,
-        ]
-    )
-    robot_description = {"robot_description": robot_description_content}
+            condition=IfCondition(launch_rviz),
+        )
 
-    robot_state_publisher_node = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
-        namespace="/arm1",
-        output="both",
-        parameters=[{"use_sim_time": True}, robot_description],
-    )
-
-    rviz_node = Node(
-        package="rviz2",
-        executable="rviz2",
-        name="rviz2",
-        output="log",
-        arguments=["-d", rviz_config_file],
-        condition=IfCondition(launch_rviz),
-    )
-
-    joint_state_broadcaster_spawner = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=["joint_state_broadcaster", "-c", "/arm1/controller_manager"],
-    )
-
-    # Delay rviz start after `joint_state_broadcaster`
-    delay_rviz_after_joint_state_broadcaster_spawner = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=joint_state_broadcaster_spawner,
-            on_exit=[rviz_node],
-        ),
-        condition=IfCondition(launch_rviz),
-    )
-
-    # There may be other controllers of the joints, but this is the initially-started one
-    initial_joint_controller_spawner_started = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=[initial_joint_controller, "-c", "/arm1/controller_manager"],
-        condition=IfCondition("true"),
-    )
-    initial_joint_controller_spawner_stopped = Node(
-        package="controller_manager",
-        executable="spawner",
-        arguments=[initial_joint_controller, "-c", "/arm1/controller_manager", "--stopped"],
-        condition=UnlessCondition(start_joint_controller),
-    )
-    # Delay start of initial_joint_controller after `joint_state_broadcaster`
-    delay_initial_joint_controller_spawner_started_after_joint_state_broadcaster_spawner = (
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=joint_state_broadcaster_spawner,
-                on_exit=[initial_joint_controller_spawner_started],
+        # There may be other controllers of the joints, but this is the initially-started one
+        initial_joint_controller_spawner_started = Node(
+            package="controller_manager",
+            executable="spawner",
+            arguments=[initial_joint_controller, "-c", f'{namespace}/controller_manager'],
+            condition=IfCondition("true"),
+        )
+        initial_joint_controller_spawner_stopped = Node(
+            package="controller_manager",
+            executable="spawner",
+            arguments=[initial_joint_controller, "-c", f'{namespace}/controller_manager', "--stopped"],
+            condition=UnlessCondition(start_joint_controller),
+        )
+        # Delay start of initial_joint_controller after `joint_state_broadcaster`
+        delay_initial_joint_controller_spawner_started_after_joint_state_broadcaster_spawner = (
+            RegisterEventHandler(
+                event_handler=OnProcessExit(
+                    target_action=joint_state_broadcaster_spawner,
+                    on_exit=[initial_joint_controller_spawner_started],
+                )
             )
         )
-    )
-    delay_initial_joint_controller_spawner_stopped_after_joint_state_broadcaster_spawner = (
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=joint_state_broadcaster_spawner,
-                on_exit=[initial_joint_controller_spawner_stopped],
+        delay_initial_joint_controller_spawner_stopped_after_joint_state_broadcaster_spawner = (
+            RegisterEventHandler(
+                event_handler=OnProcessExit(
+                    target_action=joint_state_broadcaster_spawner,
+                    on_exit=[initial_joint_controller_spawner_stopped],
+                )
             )
         )
-    )
 
-    # GZ nodes
-    gz_spawn_entity = Node(
-        package="ros_gz_sim",
-        executable="create",
-        output="screen",
-        arguments=[
-            "-string",
-            robot_description_content,
-            "-name",
-            arm["name"],
-            "-allow_renaming",
-            "true",
-            "-x", arm["x_pos"],
-            "-y", arm["y_pos"],
-            "-z", arm["z_pos"],
-        ],
-    )
+        # GZ nodes
+        gz_spawn_entity = Node(
+            package="ros_gz_sim",
+            executable="create",
+            output="screen",
+            arguments=[
+                "-string",
+                robot_description_content,
+                "-name",
+                arm["name"],
+                "-allow_renaming",
+                "true",
+                "-x", arm["x_pos"],
+                "-y", arm["y_pos"],
+                "-z", arm["z_pos"],
+            ],
+        )
+        nodes_to_start.extend([
+            gz_spawn_entity,
+            robot_state_publisher_node,
+            joint_state_broadcaster_spawner,
+            delay_rviz_after_joint_state_broadcaster_spawner,
+            delay_initial_joint_controller_spawner_stopped_after_joint_state_broadcaster_spawner,
+            delay_initial_joint_controller_spawner_started_after_joint_state_broadcaster_spawner
+        ])
     gz_launch_description_with_gui = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
@@ -229,17 +242,6 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
         condition=UnlessCondition(gazebo_gui)
     )
-
-    nodes_to_start = [
-        gz_launch_description_with_gui,
-        gz_launch_description_without_gui,
-        gz_spawn_entity,
-        robot_state_publisher_node,
-        joint_state_broadcaster_spawner,
-        delay_rviz_after_joint_state_broadcaster_spawner,
-        delay_initial_joint_controller_spawner_stopped_after_joint_state_broadcaster_spawner,
-        delay_initial_joint_controller_spawner_started_after_joint_state_broadcaster_spawner,
-    ]
 
     return nodes_to_start
 
@@ -279,7 +281,7 @@ def generate_launch_description():
     # General arguments
     declared_arguments.append(
         DeclareLaunchArgument(
-            "runtime_config_package",
+            "runtime_config_package", # may remove, since not used
             default_value="ur_simulation_gz",
             description='Package with the controller\'s configuration in "config" folder. \
         Usually the argument is not set, it enables use of a custom setup.',
@@ -295,7 +297,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "description_package",
-            default_value="ur_simulation_description", # customized ur.urdf.xacro in this package to add namespace handling in gazebo plugin
+            default_value="multi_ur_description", # customized ur.urdf.xacro in this package to add namespace handling in gazebo plugin
             description="Description package with robot URDF/XACRO files. Usually the argument \
         is not set, it enables use of a custom description.",
         )
