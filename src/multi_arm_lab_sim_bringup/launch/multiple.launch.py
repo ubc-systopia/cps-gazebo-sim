@@ -78,7 +78,7 @@ def launch_setup(context, *args, **kwargs):
     world_file = LaunchConfiguration("world_file")
 
     initial_joint_controllers = PathJoinSubstitution(
-        [FindPackageShare(runtime_config_package), "config", controllers_file]
+        [pkg_project_bringup, "config", controllers_file]
     )
 
     rviz_config_file = PathJoinSubstitution(
@@ -133,6 +133,7 @@ def launch_setup(context, *args, **kwargs):
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
+        namespace="/arm1",
         output="both",
         parameters=[{"use_sim_time": True}, robot_description],
     )
@@ -149,7 +150,7 @@ def launch_setup(context, *args, **kwargs):
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
+        arguments=["joint_state_broadcaster", "-c", "/arm1/controller_manager"],
     )
 
     # Delay rviz start after `joint_state_broadcaster`
@@ -165,14 +166,31 @@ def launch_setup(context, *args, **kwargs):
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "-c", "/controller_manager"],
-        condition=IfCondition(start_joint_controller),
+        arguments=[initial_joint_controller, "-c", "/arm1/controller_manager"],
+        condition=IfCondition("true"),
     )
     initial_joint_controller_spawner_stopped = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "-c", "/controller_manager", "--stopped"],
+        arguments=[initial_joint_controller, "-c", "/arm1/controller_manager", "--stopped"],
         condition=UnlessCondition(start_joint_controller),
+    )
+    # Delay start of initial_joint_controller after `joint_state_broadcaster`
+    delay_initial_joint_controller_spawner_started_after_joint_state_broadcaster_spawner = (
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=joint_state_broadcaster_spawner,
+                on_exit=[initial_joint_controller_spawner_started],
+            )
+        )
+    )
+    delay_initial_joint_controller_spawner_stopped_after_joint_state_broadcaster_spawner = (
+        RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=joint_state_broadcaster_spawner,
+                on_exit=[initial_joint_controller_spawner_stopped],
+            )
+        )
     )
 
     # GZ nodes
@@ -213,14 +231,14 @@ def launch_setup(context, *args, **kwargs):
     )
 
     nodes_to_start = [
+        gz_launch_description_with_gui,
+        gz_launch_description_without_gui,
+        gz_spawn_entity,
         robot_state_publisher_node,
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
-        initial_joint_controller_spawner_stopped,
-        initial_joint_controller_spawner_started,
-        gz_spawn_entity,
-        gz_launch_description_with_gui,
-        gz_launch_description_without_gui,
+        delay_initial_joint_controller_spawner_stopped_after_joint_state_broadcaster_spawner,
+        delay_initial_joint_controller_spawner_started_after_joint_state_broadcaster_spawner,
     ]
 
     return nodes_to_start
@@ -277,7 +295,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "description_package",
-            default_value="ur_description",
+            default_value="ur_simulation_description", # customized ur.urdf.xacro in this package to add namespace handling in gazebo plugin
             description="Description package with robot URDF/XACRO files. Usually the argument \
         is not set, it enables use of a custom description.",
         )
