@@ -191,12 +191,10 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
 def launch_setup(context, *args, **kwargs):
     pkg_project_bringup = get_package_share_directory('multi_arm_lab_sim_bringup')
     # Initialize Arguments
-    ur_type = LaunchConfiguration("ur_type") # TODO: remove when generalizing to robot types beyond UR
     safety_limits = LaunchConfiguration("safety_limits")
     safety_pos_margin = LaunchConfiguration("safety_pos_margin")
     safety_k_position = LaunchConfiguration("safety_k_position")
     # General arguments
-    runtime_config_package = LaunchConfiguration("runtime_config_package")
     controllers_file = LaunchConfiguration("controllers_file")
     description_package = LaunchConfiguration("description_package") # TODO: pass as arg to spawn robot so we can extend to other description packages (but get rid of as launch arg)
     description_file = LaunchConfiguration("description_file") # TODO: pass as arg to spawn robot so we can extend to other description packages (but get rid of as launch arg)
@@ -204,7 +202,6 @@ def launch_setup(context, *args, **kwargs):
     start_joint_controller = LaunchConfiguration("start_joint_controller")
     initial_joint_controller = LaunchConfiguration("initial_joint_controller") # TODO: remove, unless using anything other than joint_trajectory_controller
     launch_rviz = LaunchConfiguration("launch_rviz")
-    gazebo_gui = LaunchConfiguration("gazebo_gui")
     world_file = LaunchConfiguration("world_file")
 
     gz_launch_description_with_gui = IncludeLaunchDescription(
@@ -213,18 +210,7 @@ def launch_setup(context, *args, **kwargs):
         ),
         launch_arguments={
             "gz_args": ["-r", "-v", "4", world_file]
-        }.items(),
-        condition=IfCondition(gazebo_gui)
-    )
-
-    gz_launch_description_without_gui = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
-        ),
-        launch_arguments={
-            "gz_args": ["-s", "-r", "-v", "4", world_file]
-        }.items(),
-        condition=UnlessCondition(gazebo_gui)
+        }.items()
     )
 
     initial_joint_controllers = PathJoinSubstitution(
@@ -247,13 +233,12 @@ def launch_setup(context, *args, **kwargs):
     # Create a list of nodes to launch
     launch_nodes = []
     launch_nodes.append(gz_launch_description_with_gui)
-    launch_nodes.append(gz_launch_description_without_gui)
 
     previous_final_action = None
     for arm in arms: # assumption that all robots are UR for now
         print(arm["name"])
         arm_config = {
-            "ur_type": arm["type"],
+            "ur_type": arm["type"], # "ur3", "ur3e", "ur5", "ur5e", "ur10", "ur10e", "ur16e", "ur20", "ur30"
             "safety_limits": safety_limits,
             "safety_pos_margin": safety_pos_margin,
             "safety_k_position": safety_k_position,
@@ -277,14 +262,6 @@ def generate_launch_description():
     # UR specific arguments
     declared_arguments.append(
         DeclareLaunchArgument(
-            "ur_type",
-            description="Type/series of used UR robot.",
-            choices=["ur3", "ur3e", "ur5", "ur5e", "ur10", "ur10e", "ur16e", "ur20", "ur30"],
-            default_value="ur5e",
-        )
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
             "safety_limits",
             default_value="true",
             description="Enables the safety limits controller if true.",
@@ -305,14 +282,6 @@ def generate_launch_description():
         )
     )
     # General arguments
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "runtime_config_package",
-            default_value="ur_simulation_gz",
-            description='Package with the controller\'s configuration in "config" folder. \
-        Usually the argument is not set, it enables use of a custom setup.',
-        )
-    )
     declared_arguments.append(
         DeclareLaunchArgument(
             "controllers_file",
@@ -360,11 +329,6 @@ def generate_launch_description():
     )
     declared_arguments.append(
         DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?")
-    )
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "gazebo_gui", default_value="true", description="Start gazebo with GUI?"
-        )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
