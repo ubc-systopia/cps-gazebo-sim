@@ -3,13 +3,27 @@
   <model name="thermoshaker">
     <static>true</static>
     <link name="link">
-      	<collision name="object_collision">
+      	<collision name="collision">
 			<geometry>
 				<mesh>
 					<uri>meshes/thermoshaker.stl</uri>
 				</mesh>
 			</geometry>
 		</collision>
+		<visual name="visual">
+			<geometry>
+				<mesh>
+					<uri>meshes/thermoshaker.stl</uri>
+				</mesh>
+			</geometry>
+			<material>
+				<script>
+					<uri>materials/scripts/thermoshaker.material</uri>
+					<uri>materials/textures/base_texture.png</uri>
+					<name>thermoshakerMat/Diffuse</name>
+				</script>
+			</material>
+		</visual>
     </link>
   </model>
 </sdf>

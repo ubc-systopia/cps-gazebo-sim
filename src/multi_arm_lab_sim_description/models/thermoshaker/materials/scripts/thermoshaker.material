@@ -1,0 +1,14 @@
+material thermoshakerMat/Diffuse
+{
+  receive_shadows off
+  technique
+  {
+    pass
+    {
+      texture_unit
+      {
+        texture base_texture.png 3d
+      }
+    }
+  }
+}
