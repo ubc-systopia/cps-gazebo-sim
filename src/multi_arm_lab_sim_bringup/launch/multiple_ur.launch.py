@@ -50,16 +50,12 @@ from launch.substitutions import (
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
-#TODO: fix
-#[ERROR] [launch]: Caught exception in launch (see debug for traceback): ExecuteLocal action 'robot_state_publisher-18': executed more than once: <launch_ros.actions.node.Node object at 0x7f70777be800>
-
 
 def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
-    # TODO: check for namespace duplication here or in caller function
     namespace = f'/{robot_arm["name"]}'
     robot_description_content = Command(
         [
-            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            FindExecutable(name="xacro"),
             " ",
             PathJoinSubstitution(
                 [FindPackageShare("multi_ur_description"), "urdf", "ur.urdf.xacro"]
@@ -190,6 +186,7 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
 
 def launch_setup(context, *args, **kwargs):
     pkg_project_bringup = get_package_share_directory('multi_arm_lab_sim_bringup')
+    pkg_project_gazebo = get_package_share_directory('multi_arm_lab_sim_gazebo')
     # Initialize Arguments
     safety_limits = LaunchConfiguration("safety_limits")
     safety_pos_margin = LaunchConfiguration("safety_pos_margin")
@@ -209,7 +206,7 @@ def launch_setup(context, *args, **kwargs):
             [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
         ),
         launch_arguments={
-            "gz_args": ["-r", "-v", "4", world_file]
+            "gz_args": [os.path.join(pkg_project_gazebo, "worlds", "lab.sdf"), " -r", " -v", "4"]
         }.items()
     )
 

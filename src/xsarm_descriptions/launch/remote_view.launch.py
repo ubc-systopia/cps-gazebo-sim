@@ -49,7 +49,7 @@ def generate_launch_description():
             default_value=PathJoinSubstitution([
                 FindPackageShare('interbotix_xsarm_descriptions'),
                 'rviz',
-                'xsarm_description.rviz'
+                'xsarm_descriptions.rviz'
             ]),
             description='file path to the config file RViz should load.',
         ),

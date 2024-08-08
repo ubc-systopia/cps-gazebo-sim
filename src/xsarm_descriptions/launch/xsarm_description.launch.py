@@ -141,7 +141,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             'use_joint_pub',
-            default_value='false',
+            default_value='true',
             choices=('true', 'false'),
             description='launches the joint_state_publisher node.',
         )
@@ -158,9 +158,9 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'rvizconfig',
             default_value=PathJoinSubstitution([
-                FindPackageShare('interbotix_xsarm_descriptions'),
+                FindPackageShare('xsarm_descriptions'),
                 'rviz',
-                'xsarm_description.rviz',
+                'xsarm_descriptions.rviz',
             ]),
             description='file path to the config file RViz should load.',
         )
@@ -177,7 +177,9 @@ def generate_launch_description():
         )
     )
     declared_arguments.extend(
-        declare_interbotix_xsarm_robot_description_launch_arguments(),
+        declare_interbotix_xsarm_robot_description_launch_arguments(
+            hardware_type='sim_ignition',
+        )
     )
 
     return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])

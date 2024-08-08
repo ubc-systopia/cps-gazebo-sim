@@ -18,7 +18,7 @@
   <xacro:arg name="external_urdf_loc"               default=""/>
   <xacro:arg name="hardware_type"                   default="actual"/>
 
-  <xacro:property name="mesh_directory"             value="package://xsarm_description/meshes/${robot_model}_meshes"/>
+  <xacro:property name="mesh_directory"             value="package://xsarm_descriptions/meshes/${robot_model}_meshes"/>
   <xacro:property name="urdf_loc"                   value="$(arg external_urdf_loc)"/>
   <xacro:property name="hardware_type"              value="$(arg hardware_type)"/>
   <xacro:property name="pi_offset"                  value="0.00001"/>
@@ -61,7 +61,7 @@
   <xacro:property name="finger_limit_vel"           value="1"/>
 
   <material name="interbotix_black">
-    <texture filename="package://xsarm_description/meshes/interbotix_black.png"/>
+    <texture filename="package://xsarm_descriptions/meshes/interbotix_black.png"/>
   </material>
 
   <xacro:if value="$(arg use_world_frame)">
@@ -532,7 +532,7 @@
     <!-- If the AR tag is being used, then add the AR tag mount -->
 
     <xacro:if value="$(arg show_ar_tag)">
-      <xacro:include filename="$(find xsarm_description)/urdf/ar_tag.urdf.xacro"/>
+      <xacro:include filename="$(find xsarm_descriptions)/urdf/ar_tag.urdf.xacro"/>
     </xacro:if> <!-- show_ar_tag -->
 
     <!-- If the gripper bar is being used, then also add the gripper bar -->
@@ -763,8 +763,8 @@
 
   </xacro:if> <!-- use_gripper -->
 
-  <xacro:include filename="$(find xsarm_description)/urdf/control.urdf.xacro"/>
-  <xacro:include filename="$(find xsarm_description)/urdf/gazebo_configs.urdf.xacro"/>
+  <xacro:include filename="$(find xsarm_descriptions)/urdf/control.urdf.xacro"/>
+  <xacro:include filename="$(find xsarm_descriptions)/urdf/gazebo_configs.urdf.xacro"/>
 
   <xacro:if value="${hardware_type == 'sim_ignition'}">
     <xacro:gazebo_configs/>
