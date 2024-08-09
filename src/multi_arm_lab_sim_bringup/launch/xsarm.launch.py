@@ -51,7 +51,6 @@ def launch_setup(context, *args, **kwargs):
             str(Path(pkg_project_description).parent.resolve())
         ]
     )
-
     
     gz_launch_description_with_gui = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -61,33 +60,7 @@ def launch_setup(context, *args, **kwargs):
             "gz_args": [os.path.join(pkg_project_gazebo, "worlds", "lab.sdf"), " -r", " -v", "4"]
         }.items()
     )
-    '''
-    robot_description_content = Command(
-        [
-            FindExecutable(name="xacro"),
-            " ",
-            PathJoinSubstitution([
-                    FindPackageShare('xsarm_descriptions'),
-                    'urdf',
-                    robot_model
-                ]), '.urdf.xacro',
-            " ",
-            "hardware_type:=sim_ignition",
-            " ",
-            "robot_name:=",
-            robot_name_launch_arg
-        ]
-    )
-    robot_description = {"robot_description": robot_description_content}
 
-    robot_state_publisher_node = Node(
-        package="robot_state_publisher",
-        executable="robot_state_publisher",
-        namespace=robot_name_launch_arg,
-        output="both",
-        parameters=[{"use_sim_time": True}, robot_description],
-    )
-    '''
     spawn_robot_node = Node(
         package="ros_gz_sim",
         executable="create",
@@ -191,8 +164,7 @@ def launch_setup(context, *args, **kwargs):
     )
     return [
         ign_resource_path,
-        gz_launch_description_with_gui,
-        #robot_state_publisher_node,
+        #gz_launch_description_with_gui,
         spawn_robot_node,
         load_joint_state_broadcaster_event,
         load_arm_controller_event,

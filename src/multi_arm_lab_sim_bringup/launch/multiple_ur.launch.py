@@ -49,12 +49,13 @@ from launch.substitutions import (
 )
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch_ros.descriptions import ParameterValue
 
 
 def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
     namespace = f'/{robot_arm["name"]}'
-    robot_description_content = Command(
-        [
+    robot_description_content = ParameterValue(
+        Command([
             FindExecutable(name="xacro"),
             " ",
             PathJoinSubstitution(
@@ -83,7 +84,8 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
             " ",
             "simulation_controllers:=",
             robot_arm["initial_joint_controllers"],
-        ]
+        ]),
+        value_type=str
     )
     robot_description = {"robot_description": robot_description_content}
 
@@ -139,8 +141,8 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
         executable="create",
         output="screen",
         arguments=[
-            "-string",
-            robot_description_content,
+            "-topic",
+            f'{namespace}/robot_description',
             "-name",
             robot_arm["name"],
             "-allow_renaming",
@@ -229,7 +231,7 @@ def launch_setup(context, *args, **kwargs):
     
     # Create a list of nodes to launch
     launch_nodes = []
-    launch_nodes.append(gz_launch_description_with_gui)
+    #launch_nodes.append(gz_launch_description_with_gui)
 
     previous_final_action = None
     for arm in arms: # assumption that all robots are UR for now
