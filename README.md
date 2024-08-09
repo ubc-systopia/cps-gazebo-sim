@@ -94,12 +94,27 @@ ros2 topic list
 ros2 topic echo /TOPIC
 ```
 
+## Testing
+```bash
+sudo apt install ros-humble-launch-testing
+```
+Compile and run tests:
+```bash
+colcon test --ctest-args tests [package_selection_args]
+```
+See test results:
+```bash
+colcon test-result --all
+```
+Add `--verbose` flag to see failing test cases.
+
 ## Sources
 - [Gazebo fortress docs](https://gazebosim.org/docs/all/getstarted)
 - [Gazebo Sim 6.16 API Reference](https://gazebosim.org/api/sim/6/)
 - [ros_gz_project_template](https://gazebosim.org/docs/fortress/ros_gz_project_template_guide)
 - [UR3e description](https://github.com/ros-industrial/universal_robot/tree/noetic-devel/ur_description/meshes/ur3e)
 - [SDFormat](http://sdformat.org/spec?elem=sdf&ver=1.8)
+- [Humble Testing docs](https://docs.ros.org/en/humble/Tutorials/Intermediate/Testing/Testing-Main.html)
 
 ## Gotchas
 - ufw firewall must be disabled for Gazebo to run
