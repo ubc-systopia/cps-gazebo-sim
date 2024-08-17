@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -27,7 +28,149 @@ from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
 
+def read_config(file_path):
+    # Read the json file with robot arms
+    with open(file_path, "r") as openfile:
+        arms = json.load(openfile)["robot_arms"]
+    if arms is None:
+        raise Exception("No robot arms configuration found") 
+    return arms
+
+def get_brands(robot_arms_config):
+    return [arm["brand"] for arm in robot_arms_config]
+
+def get_arm_instances_by_brand(robot_arms_config: list[dict], brand: str) -> list[dict]:
+    for arm in robot_arms_config:
+        if arm["brand"] == brand:
+            return arm["instances"]
+
+def spawn_xsarm_robot(launch_nodes, robot_arm: dict, use_sim_time_param, previous_final_action=None):
+    namespace = robot_arm["name"]
+    
+    spawn_robot_node = Node(
+        package="ros_gz_sim",
+        executable="create",
+        output="screen",
+        arguments=[
+            '-topic',
+            f'{namespace}/robot_description',
+            "-name",
+            robot_arm["name"],
+            "-allow_renaming",
+            "true",
+            "-x", robot_arm["x"],
+            "-y", robot_arm["y"],
+            "-z", robot_arm["z"],
+            "-Y", robot_arm["Y"],
+        ],
+    )
+
+    spawn_joint_state_broadcaster_node = Node(
+        name='joint_state_broadcaster_spawner',
+        package='controller_manager',
+        executable='spawner',
+        namespace=namespace,
+        arguments=[
+            '-c',
+            f'{namespace}/controller_manager',
+            'joint_state_broadcaster',
+        ],
+        parameters=[{
+            'use_sim_time': use_sim_time_param,
+        }],
+    )
+
+    spawn_arm_controller_node = Node(
+        name='arm_controller_spawner',
+        package='controller_manager',
+        executable='spawner',
+        namespace=namespace,
+        arguments=[
+            '-c',
+            'controller_manager',
+            'arm_controller',
+        ],
+        parameters=[{
+            'use_sim_time': use_sim_time_param,
+        }]
+    )
+
+    spawn_gripper_controller_node = Node(
+        name='gripper_controller_spawner',
+        package='controller_manager',
+        executable='spawner',
+        namespace=namespace,
+        arguments=[
+            '-c',
+            'controller_manager',
+            'gripper_controller',
+        ],
+        parameters=[{
+            'use_sim_time': use_sim_time_param,
+        }]
+    )
+
+    xsarm_description_launch_include = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                FindPackageShare('xsarm_descriptions'),
+                'launch',
+                'xsarm_description.launch.py'
+            ])
+        ]),
+        launch_arguments={
+            'robot_model': robot_arm["model"],
+            'robot_name': robot_arm["name"],
+            'use_rviz': robot_arm["use_rviz_launch_arg"],
+            'rvizconfig': robot_arm["rviz_config_launch_arg"],
+            'use_sim_time': use_sim_time_param,
+            'robot_description': robot_arm["robot_description_launch_arg"],
+        }.items(),
+    )
+
+    if previous_final_action:
+        spawn_entity = RegisterEventHandler(
+            event_handler=OnProcessExit(
+                target_action=previous_final_action,
+                on_exit=[spawn_robot_node],
+            )
+        )
+    else:
+        spawn_entity = spawn_robot_node
+    
+    load_joint_state_broadcaster_event = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=spawn_robot_node,
+            on_exit=[spawn_joint_state_broadcaster_node]
+        )
+    )
+
+    # Arm and gripper controller nodes can be started in any order
+    load_arm_controller_event = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=spawn_joint_state_broadcaster_node,
+            on_exit=[spawn_arm_controller_node]
+        )
+    )
+
+    load_gripper_controller_event = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=spawn_joint_state_broadcaster_node,
+            on_exit=[spawn_gripper_controller_node]
+        )
+    )
+
+    launch_nodes.append(xsarm_description_launch_include)
+    launch_nodes.append(spawn_entity)
+    launch_nodes.append(load_joint_state_broadcaster_event)
+    launch_nodes.append(load_arm_controller_event)
+    launch_nodes.append(load_gripper_controller_event)
+
+    return launch_nodes, spawn_joint_state_broadcaster_node
+
+
 def launch_setup(context, *args, **kwargs):
+    pkg_project_bringup = get_package_share_directory('multi_arm_lab_sim_bringup')
     pkg_project_gazebo = get_package_share_directory('multi_arm_lab_sim_gazebo')
     pkg_project_description = get_package_share_directory("xsarm_descriptions")
 
@@ -60,117 +203,35 @@ def launch_setup(context, *args, **kwargs):
             "gz_args": [os.path.join(pkg_project_gazebo, "worlds", "lab.sdf"), " -r", " -v", "4"]
         }.items()
     )
+   
+    # Read the json file with robot arms
+    file_path = os.path.join(pkg_project_bringup, "config", "arms.json")
+    arms_config = read_config(file_path=file_path)
+    interbotix_xsarm_robots = get_arm_instances_by_brand(arms_config, "Interbotix")
 
-    spawn_robot_node = Node(
-        package="ros_gz_sim",
-        executable="create",
-        name=f'spawn_{robot_name_launch_arg.perform(context)}',
-        output="screen",
-        arguments=[
-            '-topic', f'{robot_name_launch_arg.perform(context)}/robot_description',
-            "-name",
-            robot_name_launch_arg,
-            "-allow_renaming",
-            "true",
-            "-x", "0.0",
-            "-y", "0.0",
-            "-z", "0.0",
-            "-Y", "0.0",
-        ],
-    )
+    # Create a list of nodes to launch
+    launch_nodes = [ign_resource_path]
+    #launch_nodes.append(gz_launch_description_with_gui)
 
-    spawn_joint_state_broadcaster_node = Node(
-        name='joint_state_broadcaster_spawner',
-        package='controller_manager',
-        executable='spawner',
-        namespace=robot_name_launch_arg,
-        arguments=[
-            '-c',
-            'controller_manager',
-            'joint_state_broadcaster',
-        ],
-        parameters=[{
-            'use_sim_time': use_sim_time_param,
-        }],
-    )
+    previous_final_action = None
+    for arm in interbotix_xsarm_robots:
+        print(arm["key"])
+        arm_config = {
+            "model": arm["model"], # e.g. vx300s (the values defined by Interbotix)
+            "use_rviz_launch_arg": use_rviz_launch_arg,
+            "rviz_config_launch_arg": rviz_config_launch_arg,
+            "robot_description_launch_arg": robot_description_launch_arg,
+            "x": arm["base_coordinates"]["x"],
+            "y": arm["base_coordinates"]["y"],
+            "z": arm["base_coordinates"]["z"],
+            "Y": arm["base_coordinates"]["Y"],
+            "name": arm["key"], # assumption that arm names are unique
+            #"moveit_config_package": moveit_config_package
+        }
+        launch_nodes, previous_final_action = spawn_xsarm_robot(launch_nodes, arm_config, use_sim_time_param, previous_final_action)
 
-    spawn_arm_controller_node = Node(
-        name='arm_controller_spawner',
-        package='controller_manager',
-        executable='spawner',
-        namespace=robot_name_launch_arg,
-        arguments=[
-            '-c',
-            'controller_manager',
-            'arm_controller',
-        ],
-        parameters=[{
-            'use_sim_time': use_sim_time_param,
-        }]
-    )
+    return launch_nodes
 
-    spawn_gripper_controller_node = Node(
-        name='gripper_controller_spawner',
-        package='controller_manager',
-        executable='spawner',
-        namespace=robot_name_launch_arg,
-        arguments=[
-            '-c',
-            'controller_manager',
-            'gripper_controller',
-        ],
-        parameters=[{
-            'use_sim_time': use_sim_time_param,
-        }]
-    )
-
-    xsarm_description_launch_include = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            PathJoinSubstitution([
-                FindPackageShare('xsarm_descriptions'),
-                'launch',
-                'xsarm_description.launch.py'
-            ])
-        ]),
-        launch_arguments={
-            'robot_model': robot_model_launch_arg,
-            'robot_name': robot_name_launch_arg,
-            'use_rviz': use_rviz_launch_arg,
-            'rvizconfig': rviz_config_launch_arg,
-            'use_sim_time': use_sim_time_param,
-            'robot_description': robot_description_launch_arg,
-        }.items(),
-    )
-
-    load_joint_state_broadcaster_event = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=spawn_robot_node,
-            on_exit=[spawn_joint_state_broadcaster_node]
-        )
-    )
-
-    load_arm_controller_event = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=spawn_joint_state_broadcaster_node,
-            on_exit=[spawn_arm_controller_node]
-        )
-    )
-
-    load_gripper_controller_event = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=spawn_joint_state_broadcaster_node,
-            on_exit=[spawn_gripper_controller_node]
-        )
-    )
-    return [
-        ign_resource_path,
-        #gz_launch_description_with_gui,
-        spawn_robot_node,
-        load_joint_state_broadcaster_event,
-        load_arm_controller_event,
-        load_gripper_controller_event,
-        xsarm_description_launch_include,
-    ]
 
 def generate_launch_description():
     declared_arguments = []
