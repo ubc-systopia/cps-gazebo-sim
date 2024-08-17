@@ -52,6 +52,22 @@ from launch_ros.substitutions import FindPackageShare
 from launch_ros.descriptions import ParameterValue
 
 
+def read_config(file_path):
+    # Read the json file with robot arms
+    with open(file_path, "r") as openfile:
+        arms = json.load(openfile)["robot_arms"]
+    if arms is None:
+        raise Exception("No robot arms configuration found") 
+    return arms
+
+def get_brands(robot_arms_config):
+    return [arm["brand"] for arm in robot_arms_config]
+
+def get_arm_instances_by_brand(robot_arms_config: list[dict], brand: str) -> list[dict]:
+    for arm in robot_arms_config:
+        if arm["brand"] == brand:
+            return arm["instances"]
+
 def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
     namespace = f'/{robot_arm["name"]}'
     robot_description_content = ParameterValue(
@@ -221,34 +237,30 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # Read the json file with robot arms
-    arms_file_path = os.path.join(pkg_project_bringup, "config", "arms.json")
-    with open(arms_file_path, "r") as openfile:
-        arms = json.load(openfile)["robot_arms"]
-    if arms is None:
-        raise Exception("No robot arms configuration found") 
-    else:
-        print(arms)
-    
+    file_path = os.path.join(pkg_project_bringup, "config", "arms.json")
+    arms_config = read_config(file_path=file_path)
+    universal_robots = get_arm_instances_by_brand(arms_config, "Universal Robots")
+
     # Create a list of nodes to launch
     launch_nodes = []
     #launch_nodes.append(gz_launch_description_with_gui)
 
     previous_final_action = None
-    for arm in arms: # assumption that all robots are UR for now
-        print(arm["name"])
+    for arm in universal_robots:
+        print(arm["key"])
         arm_config = {
-            "ur_type": arm["type"], # "ur3", "ur3e", "ur5", "ur5e", "ur10", "ur10e", "ur16e", "ur20", "ur30"
+            "ur_type": arm["model"], # "ur3", "ur3e", "ur5", "ur5e", "ur10", "ur10e", "ur16e", "ur20", "ur30"
             "safety_limits": safety_limits,
             "safety_pos_margin": safety_pos_margin,
             "safety_k_position": safety_k_position,
             "prefix": prefix,
             "start_joint_controller": start_joint_controller,
             "initial_joint_controllers": initial_joint_controllers,
-            "x": arm["x"],
-            "y": arm["y"],
-            "z": arm["z"],
-            "Y": arm["Y"],
-            "name": arm["name"], # assumption that arm names are unique
+            "x": arm["base_coordinates"]["x"],
+            "y": arm["base_coordinates"]["y"],
+            "z": arm["base_coordinates"]["z"],
+            "Y": arm["base_coordinates"]["Y"],
+            "name": arm["key"], # assumption that arm names are unique
             #"moveit_config_package": moveit_config_package
         }
         launch_nodes, previous_final_action = spawn_ur_robot(launch_nodes, arm_config, previous_final_action)
