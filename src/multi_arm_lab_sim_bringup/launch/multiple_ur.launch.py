@@ -69,7 +69,7 @@ def get_arm_instances_by_brand(robot_arms_config: list[dict], brand: str) -> lis
             return arm["instances"]
 
 def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
-    namespace = f'/{robot_arm["name"]}'
+    namespace = robot_arm["name"]
     robot_description_content = ParameterValue(
         Command([
             FindExecutable(name="xacro"),
