@@ -16,12 +16,12 @@ from launch import LaunchDescription
 
 def generate_launch_description():
     declared_arguments = []
-    # TODO: add a hook to prepend the xsarm_descriptions package to the env var
+    # TODO: add a hook to prepend the interbotix_xsarm_descriptions package to the env var
     ign_resource_path = SetEnvironmentVariable(
         name='IGN_GAZEBO_RESOURCE_PATH',
         value=[
-            os.path.join(get_package_share_directory('xsarm_descriptions'), "meshes"), ':' +
-            str(Path(get_package_share_directory('xsarm_descriptions')).parent.resolve())
+            os.path.join(get_package_share_directory('interbotix_xsarm_descriptions'), "meshes"), ':' +
+            str(Path(get_package_share_directory('interbotix_xsarm_descriptions')).parent.resolve())
         ]
     )
     declared_arguments.append(ign_resource_path)
