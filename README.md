@@ -115,6 +115,7 @@ Add `--verbose` flag to see failing test cases.
 ## Documentation
 Documentation for this repo is generated with [Sphinx](https://docs.readthedocs.io/en/stable/intro/getting-started-with-sphinx.html). To update documentation: `cd docs`, make necessary edits, then run `make html`. View the output `_build/html/index.html` in a web browser.
 
+Extra: [Google slides presentation](https://docs.google.com/presentation/d/1053tHjzkwP5x19ikkgmAjDZcN7jM4G29i3L29Vi7hdI/edit?usp=sharing) from Summer 2024 Intern/UG Event.
 
 ## Sources
 - [Gazebo fortress docs](https://gazebosim.org/docs/all/getstarted)
