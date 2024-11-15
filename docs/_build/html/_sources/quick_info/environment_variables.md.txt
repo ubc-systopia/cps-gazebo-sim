@@ -1,0 +1,5 @@
+`echo $AMENT_PREFIX_PATH`
+This environment variable lists paths where ROS 2 packages are installed and should be searched for models referenced by package:// URIs
+
+List all ROS2 packages available in your environment with `ros2 pkg list`.
+Get the installation path of the package with `ros2 pkg prefix <package_name>`.

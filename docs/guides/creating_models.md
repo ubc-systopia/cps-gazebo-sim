@@ -1,14 +1,12 @@
-# 3D scene set up
-
-## Creating 3D models
-Using off-the-shelf software like Polyscan
-Using the [Remesh](https://youtu.be/J3_5X1wqSy8?si=Xaf9qcoB3Mj4cUoM) feature to bring down the face count
+# Creating Custom 3D models
+Available off-the-shelf software:
+- [Polycam](https://poly.cam/)
+    - Use the [Remesh](https://youtu.be/J3_5X1wqSy8?si=Xaf9qcoB3Mj4cUoM) feature to bring down the face count to under 30,000.
 
 ## Importing models into Gazebo Sim
 - location
-- scale
 - orientation
-
+- scale (TODO)
 
 Use Fuel.
 then mesh to sdf

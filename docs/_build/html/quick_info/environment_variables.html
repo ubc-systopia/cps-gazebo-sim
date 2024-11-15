@@ -5,7 +5,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Custom packages &#8212; CPS Multiple Robot Gazebo Sim dev documentation</title>
+    <title>&lt;no title&gt; &#8212; CPS Multiple Robot Gazebo Sim dev documentation</title>
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
     <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=c058f7c8" />
     <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
@@ -15,7 +15,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Software dependencies and versions" href="software_dependencies_and_versions.html" />
-    <link rel="prev" title="CPS Multiple Robot Gazebo Sim documentation" href="../index.html" />
+    <link rel="prev" title="Custom packages" href="custom_packages.html" />
 
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
 
@@ -33,14 +33,10 @@
 
           <div class="body" role="main">
 
-  <section id="custom-packages">
-<h1>Custom packages<a class="headerlink" href="#custom-packages" title="Link to this heading">¶</a></h1>
-<p>Update the git remote url for interbotix_ros_manipulators, which is installed by default to <code class="docutils literal notranslate"><span class="pre">interbotix_ws/src</span></code>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">remote</span> <span class="nb">set</span><span class="o">-</span><span class="n">url</span> <span class="n">origin</span> <span class="n">git</span><span class="nd">@github</span><span class="o">.</span><span class="n">com</span><span class="p">:</span><span class="n">irisxu02</span><span class="o">/</span><span class="n">interbotix_ros_manipulators</span><span class="o">.</span><span class="n">git</span>
-</pre></div>
-</div>
-<p>The custom package supports a new hardware_type:=’gz_sim’ which is used to launch xsarm robots in the Ignition version of the modern Gazebo Sim.</p>
-</section>
+  <p><code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">$AMENT_PREFIX_PATH</span></code>
+This environment variable lists paths where ROS 2 packages are installed and should be searched for models referenced by package:// URIs</p>
+<p>List all ROS2 packages available in your environment with <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">pkg</span> <span class="pre">list</span></code>.
+Get the installation path of the package with <code class="docutils literal notranslate"><span class="pre">ros2</span> <span class="pre">pkg</span> <span class="pre">prefix</span> <span class="pre">&lt;package_name&gt;</span></code>.</p>
 
 
           </div>
@@ -69,19 +65,19 @@
 </search>
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Custom packages</a></li>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="custom_packages.html">Custom packages</a></li>
 <li class="toctree-l1"><a class="reference internal" href="software_dependencies_and_versions.html">Software dependencies and versions</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../guides/creating_models.html">Creating Custom 3D models</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../guides/loading_models.html">Adding Models to the Simulator</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../guides/development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guides/loading_models.html">Adding Models to the Simulator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guides/test.html">3D scene set up</a></li>
 </ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="../index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="../index.html" title="previous chapter">CPS Multiple Robot Gazebo Sim documentation</a></li>
+      <li>Previous: <a href="custom_packages.html" title="previous chapter">Custom packages</a></li>
       <li>Next: <a href="software_dependencies_and_versions.html" title="next chapter">Software dependencies and versions</a></li>
   </ul></li>
 </ul>
@@ -106,7 +102,7 @@
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
 
       |
-      <a href="../_sources/quick_info/custom_packages.md.txt"
+      <a href="../_sources/quick_info/environment_variables.md.txt"
           rel="nofollow">Page source</a>
     </div>
 

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Adding Models to the Simulator &#8212; CPS Multiple Robot Gazebo Sim dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=c058f7c8" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Development" href="development.html" />
+    <link rel="prev" title="Creating Custom 3D models" href="creating_models.html" />
+
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+
+
+
+
+
+  </head><body>
+
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+
+
+          <div class="body" role="main">
+
+  <section id="adding-models-to-the-simulator">
+<h1>Adding Models to the Simulator<a class="headerlink" href="#adding-models-to-the-simulator" title="Link to this heading">¶</a></h1>
+<section id="uploading-dae-meshes-from-polycam">
+<h2>Uploading DAE Meshes from Polycam<a class="headerlink" href="#uploading-dae-meshes-from-polycam" title="Link to this heading">¶</a></h2>
+<p><strong>Requirements</strong>:</p>
+<ul class="simple">
+<li><p>Blender 2.8 or higher</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bpy</span></code> Python library (install with <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">bpy</span></code>)</p></li>
+</ul>
+<p>Tested with:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bpy==4.0.0</span></code></p></li>
+<li><p>Blender 3.0.1</p></li>
+</ul>
+<p>Some COLLADA (<code class="docutils literal notranslate"><span class="pre">.dae</span></code>) files, such as those downloaded directly from Polycam, may not be fully compatible with Gazebo. To ensure compatibility, we resave these files using Blender. This step is included in the <code class="docutils literal notranslate"><span class="pre">load_model.sh</span></code> script, but you can also do it manually by running the <a class="reference download internal" download="" href="../_downloads/390d0e4096c533fad30ddf0d64febcdc/blender_resave.py"><span class="xref download myst"><code class="docutils literal notranslate"><span class="pre">blender_resave.py</span></code></span></a> script.</p>
+<p>To resave a model, run the following command:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>blender<span class="w"> </span>-b<span class="w"> </span>-P<span class="w"> </span>blender_resave.py<span class="w"> </span>--<span class="w"> </span>/path/to/input_file.dae<span class="w"> </span>/path/to/output_file.dae
+</pre></div>
+</div>
+<section id="steps">
+<h3>Steps<a class="headerlink" href="#steps" title="Link to this heading">¶</a></h3>
+<ol class="arabic">
+<li><p><strong>Export Mesh from Polycam</strong>: Download the 3D model from Polycam, then export it as a <code class="docutils literal notranslate"><span class="pre">MESH</span></code> in DAE format. This will create a zip folder containing the mesh and texture files.</p></li>
+<li><p><strong>Load the Model</strong>: Use the <a class="reference download internal" download="" href="../_downloads/03ae236d19019a33ddd74329c4b846fe/load_model.sh"><span class="xref download myst"><code class="docutils literal notranslate"><span class="pre">load_model.sh</span></code></span></a> script to load the model into the description package. Example:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>cps-gazebo-sim
+./scripts/load_model.sh<span class="w"> </span><span class="o">[</span>-n<span class="w"> </span>new_name<span class="o">]</span><span class="w"> </span><span class="o">[</span>-d<span class="w"> </span>destination_directory<span class="o">]</span><span class="w"> </span>&lt;zip_path&gt;
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">-n</span> <span class="pre">new_name</span></code>: Optionally rename the model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-d</span> <span class="pre">destination_directory</span></code>: Optionally specify a different directory to load the model into. If not provided, the model will be loaded into <code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_description/models/</span></code> by default.</p></li>
+</ul>
+</li>
+</ol>
+</section>
+</section>
+<hr class="docutils" />
+<section id="creating-and-viewing-worlds">
+<h2>Creating and Viewing Worlds<a class="headerlink" href="#creating-and-viewing-worlds" title="Link to this heading">¶</a></h2>
+<ol class="arabic">
+<li><p><strong>Modify the Configuration File</strong>: Loaded models are available for inclusion in a world, which is an environment that contains a number of models. Worlds are defined in the <code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_gazebo</span></code> package and can be configured in the <a class="reference download internal" download="" href="../_downloads/20d490d3e7b40e23a96e63c1b40652de/worlds_config.json"><span class="xref download myst"><code class="docutils literal notranslate"><span class="pre">worlds_config.json</span></code></span></a> file.</p>
+<p>For example, if you loaded models named <code class="docutils literal notranslate"><span class="pre">lab</span></code> and <code class="docutils literal notranslate"><span class="pre">ur3e</span></code>, you can include them in the world configuration as follows:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;worlds&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;lab&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">&quot;models&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="p">{</span>
+<span class="w">                    </span><span class="nt">&quot;source_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;lab&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">&quot;pose&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0 0 0 0 0 -2.5&quot;</span>
+<span class="w">                </span><span class="p">},</span>
+<span class="w">                </span><span class="p">{</span>
+<span class="w">                    </span><span class="nt">&quot;source_model&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ur3e&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;robot&quot;</span><span class="p">,</span>
+<span class="w">                    </span><span class="nt">&quot;pose&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;0.25 0 1.5 0 0 0&quot;</span>
+<span class="w">                </span><span class="p">}</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>See <a class="reference download internal" download="" href="../_downloads/86c34daf663d5e12f63da6c66ae43693/worlds.schema.json"><span class="xref download myst"><code class="docutils literal notranslate"><span class="pre">worlds.schema.json</span></code></span></a> for details on how to customize the setup of your worlds.</p>
+</li>
+<li><p><strong>Create the Worlds</strong>: To generate the worlds that you configured, run the <a class="reference download internal" download="" href="../_downloads/38edc91953c7398086e689e5f5704a2c/create_worlds.py"><span class="xref download myst"><code class="docutils literal notranslate"><span class="pre">create_worlds.py</span></code></span></a> script. This will produce <code class="docutils literal notranslate"><span class="pre">.sdf</span></code> files in the <code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_gazebo/worlds</span></code> directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>scripts/create_worlds.py
+</pre></div>
+</div>
+</li>
+<li><p><strong>Launch the World</strong>: Once the worlds are created, they can be used in <a class="reference internal" href="#../../multi_arm_lab_sim_bringup/launch/"><span class="xref myst">simulator launch files</span></a>. To view the statically defined world after building, run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ign<span class="w"> </span>gazebo<span class="w"> </span>install/multi_arm_lab_sim_gazebo/share/multi_arm_lab_sim_gazebo/worlds/&lt;world_name&gt;.sdf
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+
+
+          </div>
+
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">CPS Multiple Robot Gazebo Sim</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../quick_info/custom_packages.html">Custom packages</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quick_info/software_dependencies_and_versions.html">Software dependencies and versions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="creating_models.html">Creating Custom 3D models</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Adding Models to the Simulator</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#uploading-dae-meshes-from-polycam">Uploading DAE Meshes from Polycam</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#creating-and-viewing-worlds">Creating and Viewing Worlds</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="development.html">Development</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="creating_models.html" title="previous chapter">Creating Custom 3D models</a></li>
+      <li>Next: <a href="development.html" title="next chapter">Development</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Iris Xu.
+
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.0.2</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+
+      |
+      <a href="../_sources/guides/loading_models.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+
+
+
+  </body>
+</html>
