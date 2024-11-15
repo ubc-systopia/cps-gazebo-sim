@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sdf version="1.8">
-  <world name="lab">
+  <world name="<!-- world_name -->">
     <plugin
       filename="ignition-gazebo-physics-system"
       name="gz::sim::systems::Physics">
@@ -80,5 +80,6 @@
         </visual>
       </link>
     </model>
+    <!-- models -->
   </world>
 </sdf>
