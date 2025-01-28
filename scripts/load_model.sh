@@ -111,6 +111,11 @@ cat <<EOF > "$model_sdf_path"
         </geometry>
       </visual>
     </link>
+    <plugin filename="ignition-gazebo-touchplugin-system"
+                name="ignition::gazebo::systems::TouchPlugin">
+      <time>0.001</time>
+      <enabled>true</enabled>
+    </plugin>
   </model>
 </sdf>
 EOF
