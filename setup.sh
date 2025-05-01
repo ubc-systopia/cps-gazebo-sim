@@ -57,17 +57,17 @@ source /opt/ros/humble/setup.bash
 
 export WS=ros2_ws
 export VENDOR_PATH=$WS/src/vendors
-mkdir -p VENDOR_PATH
+mkdir -p $VENDOR_PATH
 
 # Create all vendor subdirectories
 mkdir -p "$VENDOR_PATH/universal_robots"
-#mkdir -p "$VENDOR_PATH/interbotix"
-#mkdir -p "$VENDOR_PATH/ned2"
+mkdir -p "$VENDOR_PATH/interbotix"
+mkdir -p "$VENDOR_PATH/ned2"
 
 echo "Importing vendor repos (see .repos for details)..."
 vcs import $VENDOR_PATH/universal_robots < .repos/universal_robots.repos
-#vcs import $VENDOR_PATH/interbotix < .repos/interbotix.repos
-#vcs import $VENDOR_PATH/ned2 < .repos/ned2.repos
+vcs import $VENDOR_PATH/interbotix < .repos/interbotix.repos
+vcs import $VENDOR_PATH/ned2 < .repos/ned2.repos
 
 echo "Installing ROS dependencies..."
 cd $WS
