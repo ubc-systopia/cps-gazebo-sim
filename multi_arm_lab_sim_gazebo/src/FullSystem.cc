@@ -38,7 +38,7 @@ IGNITION_ADD_PLUGIN(
     multi_arm_lab_sim_gazebo::FullSystem::ISystemPostUpdate
 )
 
-namespace multi_arm_lab_sim_gazebo 
+namespace multi_arm_lab_sim_gazebo
 {
 
 void FullSystem::Configure(const gz::sim::Entity &_entity,
@@ -68,7 +68,7 @@ void FullSystem::Update(const gz::sim::UpdateInfo &_info,
 }
 
 void FullSystem::PostUpdate(const gz::sim::UpdateInfo &_info,
-                            const gz::sim::EntityComponentManager &_ecm) 
+                            const gz::sim::EntityComponentManager &_ecm)
 {
   if (!_info.paused && _info.iterations % 1000 == 0)
   {

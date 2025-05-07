@@ -37,8 +37,8 @@ namespace multi_arm_lab_sim_gazebo
     public gz::sim::ISystemUpdate,
     public gz::sim::ISystemPostUpdate
   {
-    // Plugins inheriting ISystemConfigure must implement the Configure 
-    // callback. This is called when a system is initially loaded. 
+    // Plugins inheriting ISystemConfigure must implement the Configure
+    // callback. This is called when a system is initially loaded.
     // The _entity variable contains the entity that the system is attached to
     // The _element variable contains the sdf Element with custom configuration
     // The _ecm provides an interface to all entities and components

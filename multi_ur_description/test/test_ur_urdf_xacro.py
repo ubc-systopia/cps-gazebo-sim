@@ -48,7 +48,10 @@ def test_ur_urdf_xacro():
     prefix = '""'
 
     joint_limit_params = os.path.join(
-        get_package_share_directory(description_package), "config", ur_type, "joint_limits.yaml"
+        get_package_share_directory(description_package),
+        "config",
+        ur_type,
+        "joint_limits.yaml",
     )
     kinematics_params = os.path.join(
         get_package_share_directory(description_package),
@@ -101,7 +104,10 @@ def test_ur_urdf_xacro():
         assert xacro_process.returncode == 0, " --- XACRO command failed ---"
 
         check_urdf_process = subprocess.run(
-            check_urdf_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+            check_urdf_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
         )
 
         assert (

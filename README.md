@@ -56,13 +56,13 @@ sudo apt install ros-humble-moveit
 
 Build
 ```bash
-cd ~/cps-gazebo-sim
+cd ~/workspace
 colcon build --cmake-args -DBUILD_TESTING=ON
 ```
 Run
 ```bash
 # source the workspace
-. ~/cps-gazebo-sim/install/setup.sh
+. ~/workspace/install/setup.sh
 # launch the simulation and visualize in RViz
 ros2 launch multi_arm_lab_sim_bringup ur3e.launch.py
 ```

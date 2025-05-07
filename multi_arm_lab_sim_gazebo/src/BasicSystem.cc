@@ -34,7 +34,7 @@ IGNITION_ADD_PLUGIN(
     gz::sim::System,
     multi_arm_lab_sim_gazebo::BasicSystem::ISystemPostUpdate)
 
-namespace multi_arm_lab_sim_gazebo 
+namespace multi_arm_lab_sim_gazebo
 {
 
 void BasicSystem::PostUpdate(const gz::sim::UpdateInfo &_info,

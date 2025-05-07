@@ -13,7 +13,10 @@ from launch_testing.actions import ReadyToTest
 def generate_test_description():
     launch_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(get_package_share_directory("multi_arm_lab_sim_bringup"), "launch/environment.launch.py")
+            os.path.join(
+                get_package_share_directory("multi_arm_lab_sim_bringup"),
+                "launch/environment.launch.py",
+            )
         ),
     )
 

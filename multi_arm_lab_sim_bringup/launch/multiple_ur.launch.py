@@ -35,6 +35,7 @@ from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
     IncludeLaunchDescription,
+    LogInfo,
     OpaqueFunction,
     RegisterEventHandler,
 )
@@ -57,58 +58,63 @@ def read_config(file_path):
     with open(file_path, "r") as openfile:
         arms = json.load(openfile)["robot_arms"]
     if arms is None:
-        raise Exception("No robot arms configuration found") 
+        raise Exception("No robot arms configuration found")
     return arms
+
 
 def get_brands(robot_arms_config):
     return [arm["brand"] for arm in robot_arms_config]
+
 
 def get_arm_instances_by_brand(robot_arms_config: list[dict], brand: str) -> list[dict]:
     for arm in robot_arms_config:
         if arm["brand"] == brand:
             return arm["instances"]
 
-def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
-    namespace = robot_arm["name"]
+
+def spawn_ur_robot(launch_nodes: list, robot_arm: dict, previous_final_action=None):
+    ns = robot_arm["name"]
     robot_description_content = ParameterValue(
-        Command([
-            FindExecutable(name="xacro"),
-            " ",
-            PathJoinSubstitution(
-                [FindPackageShare("multi_ur_description"), "urdf", "ur.urdf.xacro"]
-            ),
-            " ",
-            "safety_limits:=",
-            robot_arm["safety_limits"],
-            " ",
-            "safety_pos_margin:=",
-            robot_arm["safety_pos_margin"],
-            " ",
-            "safety_k_position:=",
-            robot_arm["safety_k_position"],
-            " ",
-            "name:=",
-            robot_arm["name"],
-            " ",
-            "ur_type:=",
-            robot_arm["ur_type"],
-            " ",
-            "prefix:=",
-            robot_arm["prefix"],
-            " ",
-            "sim_ignition:=true",
-            " ",
-            "simulation_controllers:=",
-            robot_arm["initial_joint_controllers"],
-        ]),
-        value_type=str
+        Command(
+            [
+                PathJoinSubstitution([FindExecutable(name="xacro")]),
+                " ",
+                PathJoinSubstitution(
+                    [FindPackageShare("multi_ur_description"), "urdf", "ur.urdf.xacro"]
+                ),
+                " ",
+                "safety_limits:=",
+                robot_arm["safety_limits"],
+                " ",
+                "safety_pos_margin:=",
+                robot_arm["safety_pos_margin"],
+                " ",
+                "safety_k_position:=",
+                robot_arm["safety_k_position"],
+                " ",
+                "name:=",
+                robot_arm["name"],
+                " ",
+                "ur_type:=",
+                robot_arm["ur_type"],
+                " ",
+                "prefix:=",
+                robot_arm["prefix"],
+                " ",
+                "sim_ignition:=true",
+                " ",
+                "simulation_controllers:=",
+                robot_arm["initial_joint_controllers"],
+            ]
+        ),
+        value_type=str,
     )
     robot_description = {"robot_description": robot_description_content}
 
     robot_state_publisher_node = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
-        namespace=namespace,
+        namespace=ns,
         output="both",
         parameters=[{"use_sim_time": True}, robot_description],
     )
@@ -125,7 +131,8 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
     joint_state_broadcaster_spawner = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_state_broadcaster", "-c", f'{namespace}/controller_manager'],
+        # namespace=ns,
+        arguments=["joint_state_broadcaster", "-c", f"{ns}/controller_manager"],
     )
 
     # Delay rviz start after `joint_state_broadcaster`
@@ -141,13 +148,24 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_trajectory_controller", "-c", f'{namespace}/controller_manager'],
+        # namespace=ns,
+        arguments=[
+            "joint_trajectory_controller",
+            "-c",
+            f"{ns}/controller_manager",
+        ],
         condition=IfCondition(robot_arm["start_joint_controller"]),
     )
     initial_joint_controller_spawner_stopped = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=["joint_trajectory_controller", "-c", f'{namespace}/controller_manager', "--stopped"],
+        # namespace=ns,
+        arguments=[
+            "joint_trajectory_controller",
+            "-c",
+            f"{ns}/controller_manager",
+            "--stopped",
+        ],
         condition=UnlessCondition(robot_arm["start_joint_controller"]),
     )
 
@@ -158,18 +176,22 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
         output="screen",
         arguments=[
             "-topic",
-            f'{namespace}/robot_description',
+            f"{ns}/robot_description",
             "-name",
             robot_arm["name"],
             "-allow_renaming",
             "true",
-            "-x", robot_arm["x"],
-            "-y", robot_arm["y"],
-            "-z", robot_arm["z"],
-            "-Y", robot_arm["Y"],
+            "-x",
+            robot_arm["x"],
+            "-y",
+            robot_arm["y"],
+            "-z",
+            robot_arm["z"],
+            "-Y",
+            robot_arm["Y"],
         ],
     )
-    
+
     if previous_final_action:
         spawn_entity = RegisterEventHandler(
             event_handler=OnProcessExit(
@@ -179,18 +201,29 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
         )
     else:
         spawn_entity = gz_spawn_entity
-    
+
     state_controller_event = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=gz_spawn_entity,
-            on_exit=[joint_state_broadcaster_spawner],
+            on_exit=[
+                LogInfo(
+                    msg="gz_spawn_entity finished, starting joint_state_broadcaster_spawner..."
+                ),
+                joint_state_broadcaster_spawner,
+            ],
         )
     )
 
     arm_controller_event = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=joint_state_broadcaster_spawner,
-            on_exit=[initial_joint_controller_spawner_started, initial_joint_controller_spawner_stopped],
+            on_exit=[
+                LogInfo(
+                    msg="joint_state_broadcaster_spawner finished, starting controllers..."
+                ),
+                initial_joint_controller_spawner_started,
+                initial_joint_controller_spawner_stopped,
+            ],
         )
     )
 
@@ -199,23 +232,27 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
     launch_nodes.append(state_controller_event)
     launch_nodes.append(arm_controller_event)
 
-    return launch_nodes, joint_state_broadcaster_spawner
+    return initial_joint_controller_spawner_started
 
 
 def launch_setup(context, *args, **kwargs):
-    pkg_project_bringup = get_package_share_directory('multi_arm_lab_sim_bringup')
-    pkg_project_gazebo = get_package_share_directory('multi_arm_lab_sim_gazebo')
+    pkg_project_bringup = get_package_share_directory("multi_arm_lab_sim_bringup")
+    pkg_project_gazebo = get_package_share_directory("multi_arm_lab_sim_gazebo")
     # Initialize Arguments
     safety_limits = LaunchConfiguration("safety_limits")
     safety_pos_margin = LaunchConfiguration("safety_pos_margin")
     safety_k_position = LaunchConfiguration("safety_k_position")
     # General arguments
     controllers_file = LaunchConfiguration("controllers_file")
-    description_package = LaunchConfiguration("description_package") # TODO: pass as arg to spawn robot so we can extend to other description packages (but get rid of as launch arg)
-    description_file = LaunchConfiguration("description_file") # TODO: pass as arg to spawn robot so we can extend to other description packages (but get rid of as launch arg)
+    description_package = LaunchConfiguration(
+        "description_package"
+    )  # TODO: pass as arg to spawn robot so we can extend to other description packages (but get rid of as launch arg)
+    description_file = LaunchConfiguration(
+        "description_file"
+    )  # TODO: pass as arg to spawn robot so we can extend to other description packages (but get rid of as launch arg)
     prefix = LaunchConfiguration("prefix")
     start_joint_controller = LaunchConfiguration("start_joint_controller")
-    initial_joint_controller = LaunchConfiguration("initial_joint_controller") # TODO: remove, unless using anything other than joint_trajectory_controller
+    # initial_joint_controller = LaunchConfiguration("initial_joint_controller") # TODO: remove unless using other than joint_trajectory_controller
     launch_rviz = LaunchConfiguration("launch_rviz")
     world_file = LaunchConfiguration("world_file")
 
@@ -224,8 +261,15 @@ def launch_setup(context, *args, **kwargs):
             [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
         ),
         launch_arguments={
-            "gz_args": [os.path.join(pkg_project_gazebo, "worlds", "lab.sdf"), " -r", " -v", "4"]
-        }.items()
+            "gz_args": [
+                # PathJoinSubstitution([pkg_project_gazebo, "worlds", world_file]),
+                os.path.join(pkg_project_gazebo, "worlds", "lab.sdf"),
+                " -r",
+                " -v",
+                "4",
+                # world_file
+            ]
+        }.items(),
     )
 
     initial_joint_controllers = PathJoinSubstitution(
@@ -243,13 +287,15 @@ def launch_setup(context, *args, **kwargs):
 
     # Create a list of nodes to launch
     launch_nodes = []
-    #launch_nodes.append(gz_launch_description_with_gui)
+    launch_nodes.append(gz_launch_description_with_gui)
 
     previous_final_action = None
     for arm in universal_robots:
         print(arm["key"])
         arm_config = {
-            "ur_type": arm["model"], # "ur3", "ur3e", "ur5", "ur5e", "ur10", "ur10e", "ur16e", "ur20", "ur30"
+            "ur_type": arm[
+                "model"
+            ],  # "ur3", "ur3e", "ur5", "ur5e", "ur10", "ur10e", "ur16e", "ur20", "ur30"
             "safety_limits": safety_limits,
             "safety_pos_margin": safety_pos_margin,
             "safety_k_position": safety_k_position,
@@ -260,11 +306,12 @@ def launch_setup(context, *args, **kwargs):
             "y": arm["base_coordinates"]["y"],
             "z": arm["base_coordinates"]["z"],
             "Y": arm["base_coordinates"]["Y"],
-            "name": arm["key"], # assumption that arm names are unique
-            #"moveit_config_package": moveit_config_package
+            "name": arm["key"],  # assumption that arm names are unique
+            # "moveit_config_package": moveit_config_package
         }
-        launch_nodes, previous_final_action = spawn_ur_robot(launch_nodes, arm_config, previous_final_action)
-
+        previous_final_action = spawn_ur_robot(  # modifies launch_nodes list
+            launch_nodes, arm_config, previous_final_action
+        )
     return launch_nodes
 
 
@@ -296,14 +343,14 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "controllers_file",
-            default_value="ur_controllers.yaml",
+            default_value="multi_ur_controllers.yaml",
             description="YAML file with the controllers configuration.",
         )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
             "description_package",
-            default_value="multi_ur_description", # customized ur.urdf.xacro in this package to add namespace handling in gazebo plugin
+            default_value="multi_ur_description",  # customized ur.urdf.xacro in this package to add namespace handling in gazebo plugin
             description="Description package with robot URDF/XACRO files. Usually the argument \
         is not set, it enables use of a custom description.",
         )
@@ -339,7 +386,9 @@ def generate_launch_description():
         )
     )
     declared_arguments.append(
-        DeclareLaunchArgument("launch_rviz", default_value="true", description="Launch RViz?")
+        DeclareLaunchArgument(
+            "launch_rviz", default_value="true", description="Launch RViz?"
+        )
     )
     declared_arguments.append(
         DeclareLaunchArgument(
@@ -349,4 +398,6 @@ def generate_launch_description():
         )
     )
 
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription(
+        declared_arguments + [OpaqueFunction(function=launch_setup)]
+    )

@@ -12,6 +12,7 @@ log/
 *.pyc
 *.pyo
 __pycache__/
+.python-version
 
 # macOS
 .DS_Store

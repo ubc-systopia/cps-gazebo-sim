@@ -27,75 +27,82 @@ def read_config(file_path):
     with open(file_path, "r") as openfile:
         arms = json.load(openfile)["robot_arms"]
     if arms is None:
-        raise Exception("No robot arms configuration found") 
+        raise Exception("No robot arms configuration found")
     return arms
+
 
 def get_brands(robot_arms_config):
     return [arm["brand"] for arm in robot_arms_config]
+
 
 def get_arm_instances_by_brand(robot_arms_config: list[dict], brand: str) -> list[dict]:
     for arm in robot_arms_config:
         if arm["brand"] == brand:
             return arm["instances"]
 
+
 def spawn_xsarm_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
     namespace = f'/{robot_arm["name"]}'
     xsarm_description_launch_include = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            PathJoinSubstitution([
-                FindPackageShare('interbotix_xsarm_descriptions'),
-                'launch',
-                'xsarm_description.launch.py'
-            ])
-        ]),
+        PythonLaunchDescriptionSource(
+            [
+                PathJoinSubstitution(
+                    [
+                        FindPackageShare("interbotix_xsarm_descriptions"),
+                        "launch",
+                        "xsarm_description.launch.py",
+                    ]
+                )
+            ]
+        ),
         launch_arguments={
-            'robot_model': robot_arm["model"],
-            'robot_name': robot_arm["name"], # this launch arg is used as namespace id
-            'use_joint_pub': 'true',
-            'use_sim_time': 'true',
+            "robot_model": robot_arm["model"],
+            "robot_name": robot_arm["name"],  # this launch arg is used as namespace id
+            "use_joint_pub": "true",
+            "use_sim_time": "true",
         }.items(),
     )
 
     spawn_joint_state_broadcaster_node = Node(
-        name='joint_state_broadcaster_spawner',
-        package='controller_manager',
-        executable='spawner',
+        name="joint_state_broadcaster_spawner",
+        package="controller_manager",
+        executable="spawner",
         arguments=[
-            '-c',
-            f'{namespace}/controller_manager',
-            'joint_state_broadcaster',
+            "-c",
+            f"{namespace}/controller_manager",
+            "joint_state_broadcaster",
         ],
-        #parameters=[{
+        # parameters=[{
         #    'use_sim_time': 'true',
-        #}],
+        # }],
     )
 
     spawn_arm_controller_node = Node(
-        name='arm_controller_spawner',
-        package='controller_manager',
-        executable='spawner',
+        name="arm_controller_spawner",
+        package="controller_manager",
+        executable="spawner",
         arguments=[
-            '-c',
-            f'{namespace}/controller_manager',
-            'arm_controller',
+            "-c",
+            f"{namespace}/controller_manager",
+            "arm_controller",
         ],
-        #parameters=[{
+        # parameters=[{
         #    'use_sim_time': 'true',
-        #}]
+        # }]
     )
 
     spawn_gripper_controller_node = Node(
-        name='gripper_controller_spawner',
-        package='controller_manager',
-        executable='spawner',
+        name="gripper_controller_spawner",
+        package="controller_manager",
+        executable="spawner",
         arguments=[
-            '-c',
-            f'{namespace}/controller_manager',
-            'gripper_controller',
+            "-c",
+            f"{namespace}/controller_manager",
+            "gripper_controller",
         ],
-        #parameters=[{
+        # parameters=[{
         #    'use_sim_time': 'true',
-        #}]
+        # }]
     )
 
     spawn_robot_node = Node(
@@ -103,16 +110,20 @@ def spawn_xsarm_robot(launch_nodes, robot_arm: dict, previous_final_action=None)
         executable="create",
         output="screen",
         arguments=[
-            '-topic',
-            f'{namespace}/robot_description',
+            "-topic",
+            f"{namespace}/robot_description",
             "-name",
             robot_arm["name"],
             "-allow_renaming",
             "true",
-            "-x", robot_arm["x"],
-            "-y", robot_arm["y"],
-            "-z", robot_arm["z"],
-            "-Y", robot_arm["Y"],
+            "-x",
+            robot_arm["x"],
+            "-y",
+            robot_arm["y"],
+            "-z",
+            robot_arm["z"],
+            "-Y",
+            robot_arm["Y"],
         ],
     )
 
@@ -125,11 +136,10 @@ def spawn_xsarm_robot(launch_nodes, robot_arm: dict, previous_final_action=None)
         )
     else:
         spawn_entity = spawn_robot_node
-    
+
     load_joint_state_broadcaster_event = RegisterEventHandler(
         event_handler=OnProcessExit(
-            target_action=spawn_robot_node,
-            on_exit=[spawn_joint_state_broadcaster_node]
+            target_action=spawn_robot_node, on_exit=[spawn_joint_state_broadcaster_node]
         )
     )
 
@@ -137,7 +147,7 @@ def spawn_xsarm_robot(launch_nodes, robot_arm: dict, previous_final_action=None)
     load_controllers_event = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=spawn_joint_state_broadcaster_node,
-            on_exit=[spawn_arm_controller_node, spawn_gripper_controller_node]
+            on_exit=[spawn_arm_controller_node, spawn_gripper_controller_node],
         )
     )
 
@@ -150,27 +160,34 @@ def spawn_xsarm_robot(launch_nodes, robot_arm: dict, previous_final_action=None)
 
 
 def launch_setup(context, *args, **kwargs):
-    pkg_project_bringup = get_package_share_directory('multi_arm_lab_sim_bringup')
-    pkg_project_gazebo = get_package_share_directory('multi_arm_lab_sim_gazebo')
-    pkg_project_description = get_package_share_directory("interbotix_xsarm_descriptions")
+    pkg_project_bringup = get_package_share_directory("multi_arm_lab_sim_bringup")
+    pkg_project_gazebo = get_package_share_directory("multi_arm_lab_sim_gazebo")
+    pkg_project_description = get_package_share_directory(
+        "interbotix_xsarm_descriptions"
+    )
 
     ign_resource_path = SetEnvironmentVariable(
-        name='IGN_GAZEBO_RESOURCE_PATH',
+        name="IGN_GAZEBO_RESOURCE_PATH",
         value=[
-            os.path.join(pkg_project_description, "meshes"), ':' +
-            str(Path(pkg_project_description).parent.resolve())
-        ]
+            os.path.join(pkg_project_description, "meshes"),
+            ":" + str(Path(pkg_project_description).parent.resolve()),
+        ],
     )
-    
+
     gz_launch_description_with_gui = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
         ),
         launch_arguments={
-            "gz_args": [os.path.join(pkg_project_gazebo, "worlds", "lab.sdf"), " -r", " -v", "4"]
-        }.items()
+            "gz_args": [
+                os.path.join(pkg_project_gazebo, "worlds", "lab.sdf"),
+                " -r",
+                " -v",
+                "4",
+            ]
+        }.items(),
     )
-   
+
     # Read the json file with robot arms
     file_path = os.path.join(pkg_project_bringup, "config", "arms.json")
     arms_config = read_config(file_path=file_path)
@@ -184,19 +201,23 @@ def launch_setup(context, *args, **kwargs):
     for arm in interbotix_xsarm_robots:
         print(arm["key"])
         arm_config = {
-            "model": arm["model"], # e.g. vx300s (the values defined by Interbotix)
+            "model": arm["model"],  # e.g. vx300s (the values defined by Interbotix)
             "x": arm["base_coordinates"]["x"],
             "y": arm["base_coordinates"]["y"],
             "z": arm["base_coordinates"]["z"],
             "Y": arm["base_coordinates"]["Y"],
-            "name": arm["key"], # assumption that arm names are unique
-            #"moveit_config_package": moveit_config_package
+            "name": arm["key"],  # assumption that arm names are unique
+            # "moveit_config_package": moveit_config_package
         }
-        launch_nodes, previous_final_action = spawn_xsarm_robot(launch_nodes, arm_config, previous_final_action)
+        launch_nodes, previous_final_action = spawn_xsarm_robot(
+            launch_nodes, arm_config, previous_final_action
+        )
 
     return launch_nodes
 
 
 def generate_launch_description():
     declared_arguments = []
-    return LaunchDescription(declared_arguments + [OpaqueFunction(function=launch_setup)])
+    return LaunchDescription(
+        declared_arguments + [OpaqueFunction(function=launch_setup)]
+    )
