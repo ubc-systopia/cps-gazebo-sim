@@ -15,3 +15,4 @@ CPS Multiple Robot Gazebo Sim documentation
    guides/creating_models.md
    guides/loading_models.md
    guides/development.md
+   guides/customized_vendor_packages.md
