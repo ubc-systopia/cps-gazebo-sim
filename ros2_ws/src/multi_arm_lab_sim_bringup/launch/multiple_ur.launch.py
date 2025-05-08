@@ -75,7 +75,7 @@ def spawn_ur_robot(launch_nodes, robot_arm: dict, previous_final_action=None):
             FindExecutable(name="xacro"),
             " ",
             PathJoinSubstitution(
-                [FindPackageShare("multi_ur_description"), "urdf", "ur.urdf.xacro"]
+                [FindPackageShare("ur_description"), "urdf", "ur.urdf.xacro"]
             ),
             " ",
             "safety_limits:=",
@@ -303,7 +303,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "description_package",
-            default_value="multi_ur_description", # customized ur.urdf.xacro in this package to add namespace handling in gazebo plugin
+            default_value="ur_description",
             description="Description package with robot URDF/XACRO files. Usually the argument \
         is not set, it enables use of a custom description.",
         )
