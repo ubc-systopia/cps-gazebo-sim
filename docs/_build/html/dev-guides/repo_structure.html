@@ -33,6 +33,50 @@
             
   <section id="repo-structure">
 <h1>Repo Structure<a class="headerlink" href="#repo-structure" title="Link to this heading">¶</a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>├── ros2_ws
+│   └── src
+│       ├── multi_arm_lab_sim_bringup
+│       ├── multi_arm_lab_sim_description
+│       ├── multi_arm_lab_sim_gazebo
+│       └── vendors
+├── scripts
+│   ├── blender_resave.py
+│   ├── create_worlds.py
+│   ├── load_model.sh
+│   └── requirements.txt
+└── setup.sh
+</pre></div>
+</div>
+<section id="ros-2-packages">
+<h2>ROS 2 Packages<a class="headerlink" href="#ros-2-packages" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_bringup</span></code></strong>
+Contains launch files and configuration settings required to initialize and run the multi-arm lab simulation. This includes parameters for ROS 2 nodes, controllers, and optional plugins for logging or visualization.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_description</span></code></strong>
+Holds custom model definitions used in the simulation. These typically represent lab-specific robots, sensors, or tooling, and <strong>do not</strong> include third-party or vendor-supplied models, which are instead located under the <code class="docutils literal notranslate"><span class="pre">vendors/</span></code> directory.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_gazebo</span></code></strong>
+Contains Gazebo-specific resources such as <code class="docutils literal notranslate"><span class="pre">.sdf</span></code> files. These define the simulated environment and may include lab layouts, objects, and assets. Worlds can be written by combining models directly, or generated programmatically using config files and helper scripts as described in the <a class="reference internal" href="../user-guides/loading_models.html"><span class="std std-doc">world generation guide</span></a>.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">vendors/</span></code></strong>
+Directory reserved for third-party robot and equipment description packages. These are typically cloned or copied from official sources and should remain unmodified.</p></li>
+</ul>
+</section>
+<section id="scripts">
+<h2>Scripts<a class="headerlink" href="#scripts" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">blender_resave.py</span></code></strong>
+Resaves a COLLADA (.dae) file using Blender to ensure compatibility with Gazebo.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">create_worlds.py</span></code></strong>
+Automates the creation of Gazebo world files using provided configuration files. Useful for generating structured, repeatable environments for testing and simulation.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">load_model.sh</span></code></strong></p></li>
+</ul>
+</section>
+<section id="top-level-scripts">
+<h2>Top-level Scripts<a class="headerlink" href="#top-level-scripts" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">setup.sh</span></code></strong>
+Convenience script for initializing the workspace.</p></li>
+</ul>
+</section>
 </section>
 
 
@@ -61,13 +105,10 @@
     </div>
 </search>
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
-<p class="caption" role="heading"><span class="caption-text">User Guides</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../user-guides/index.html">User Guides</a></li>
-</ul>
-<p class="caption" role="heading"><span class="caption-text">Developer Guides</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="index.html">Developer Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user-guides/index.html">User Guides</a></li>
 </ul>
 
 <div class="relations">
