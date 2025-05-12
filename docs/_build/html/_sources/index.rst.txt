@@ -11,8 +11,5 @@ CPS Multiple Robot Gazebo Sim documentation
    :caption: Contents:
    :glob:
 
-   quick_info/*
-   guides/creating_models.md
-   guides/loading_models.md
-   guides/development.md
-   guides/customized_vendor_packages.md
+   dev-guides/index
+   user-guides/index

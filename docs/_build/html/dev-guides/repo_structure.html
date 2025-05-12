@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Repo Structure &#8212; CPS Multiple Robot Gazebo Sim dev documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=c058f7c8" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=3ce10a4d"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="repo-structure">
+<h1>Repo Structure<a class="headerlink" href="#repo-structure" title="Link to this heading">¶</a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>├── ros2_ws
+│   └── src
+│       ├── multi_arm_lab_sim_bringup
+│       ├── multi_arm_lab_sim_description
+│       ├── multi_arm_lab_sim_gazebo
+│       └── vendors
+├── scripts
+│   ├── blender_resave.py
+│   ├── create_worlds.py
+│   ├── load_model.sh
+│   └── requirements.txt
+└── setup.sh
+</pre></div>
+</div>
+<section id="ros-2-packages">
+<h2>ROS 2 Packages<a class="headerlink" href="#ros-2-packages" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_bringup</span></code></strong>
+Contains launch files and configuration settings required to initialize and run the multi-arm lab simulation. This includes parameters for ROS 2 nodes, controllers, and optional plugins for logging or visualization.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_description</span></code></strong>
+Holds custom model definitions used in the simulation. These typically represent lab-specific robots, sensors, or tooling, and <strong>do not</strong> include third-party or vendor-supplied models, which are instead located under the <code class="docutils literal notranslate"><span class="pre">vendors/</span></code> directory.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_gazebo</span></code></strong>
+Contains Gazebo-specific resources such as <code class="docutils literal notranslate"><span class="pre">.sdf</span></code> files. These define the simulated environment and may include lab layouts, objects, and assets. Worlds can be written by combining models directly, or generated programmatically using config files and helper scripts as described in the <a class="reference internal" href="../user-guides/loading_models.html"><span class="std std-doc">world generation guide</span></a>.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">vendors/</span></code></strong>
+Directory reserved for third-party robot and equipment description packages. These are typically cloned or copied from official sources and should remain unmodified.</p></li>
+</ul>
+</section>
+<section id="scripts">
+<h2>Scripts<a class="headerlink" href="#scripts" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">blender_resave.py</span></code></strong>
+Resaves a COLLADA (.dae) file using Blender to ensure compatibility with Gazebo.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">create_worlds.py</span></code></strong>
+Automates the creation of Gazebo world files using provided configuration files. Useful for generating structured, repeatable environments for testing and simulation.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">load_model.sh</span></code></strong></p></li>
+</ul>
+</section>
+<section id="top-level-scripts">
+<h2>Top-level Scripts<a class="headerlink" href="#top-level-scripts" title="Link to this heading">¶</a></h2>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">setup.sh</span></code></strong>
+Convenience script for initializing the workspace.</p></li>
+</ul>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">CPS Multiple Robot Gazebo Sim</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Developer Guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../user-guides/index.html">User Guides</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Iris Xu.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.0.2</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="../_sources/dev-guides/repo_structure.md.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
