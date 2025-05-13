@@ -5,7 +5,7 @@
       "instances": [
         {
           "key": "arm1",
-          "model": "ur3e",
+          "model": "ur5e",
           "base_coordinates": {
             "x": "-0.5",
             "y": "-1",
