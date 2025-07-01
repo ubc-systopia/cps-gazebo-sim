@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="arm1">
+    <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
+
+    <!-- Demo-mode robot without Gazebo hardware interface -->
+    <!-- tell the parser that there really is a world frame -->
+    <link name="world"/>
+
+    <xacro:arg name="name" default="arm1"/>
+    <xacro:arg name="x"    default="-2.0"/>
+    <xacro:arg name="y"    default="-2.0"/>
+    <xacro:arg name="z"    default="0.0"/>
+    <xacro:arg name="Y"    default="0.0"/>
+    <xacro:arg name="ur_type" default="ur3e"/>
+
+    <!-- bring in just the macro definitions -->
+    <xacro:include filename="$(find multi_ur_description)/urdf/ur_macro.xacro"/>
+
+    <!-- Import control_xacro for demo mode -->
+    <xacro:include filename="arm1.ros2_control.xacro" />
+
+    <!-- invoke the macro directly without simulation hardware -->
+    <xacro:ur_robot
+      name="$(arg name)"
+      tf_prefix="$(arg name)_"
+      parent="world"
+      joint_limits_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/joint_limits.yaml"
+      kinematics_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/default_kinematics.yaml"
+      physical_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/physical_parameters.yaml"
+      visual_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/visual_parameters.yaml"
+      sim_gazebo="false"
+      sim_ignition="false"
+      generate_ros2_control_tag="false"
+    >
+      <origin xyz="$(arg x) $(arg y) $(arg z)" rpy="0 0 $(arg Y)"/>
+    </xacro:ur_robot>
+
+    <!-- Use fake system for demo -->
+    <xacro:arm1_ros2_control name="FakeSystem" initial_positions_file="$(arg initial_positions_file)"/>
+
+</robot>
