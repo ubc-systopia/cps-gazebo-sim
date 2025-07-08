@@ -5,12 +5,42 @@
       "instances": [
         {
           "key": "arm1",
-          "model": "ur5e",
+          "model": "ur3e",
           "base_coordinates": {
-            "x": "-0.5",
-            "y": "-1",
+            "x": "-2.0",
+            "y": "-2.0",
             "z": "0.0",
             "Y": "0.0"
+          }
+        },
+        {
+          "key": "arm2",
+          "model": "ur3e",
+          "base_coordinates": {
+            "x": "-2.2",
+            "y": "-2.0",
+            "z": "0.0",
+            "Y": "0"
+          }
+        },
+        {
+          "key": "arm3",
+          "model": "ur10",
+          "base_coordinates": {
+            "x": "2",
+            "y": "-2.0",
+            "z": "0.0",
+            "Y": "0.0"
+          }
+        },
+        {
+          "key": "arm4",
+          "model": "ur5",
+          "base_coordinates": {
+            "x": "2",
+            "y": "2",
+            "z": "0.0",
+            "Y": "3.14"
           }
         }
       ]

@@ -74,6 +74,18 @@ def get_arm_instances_by_brand(robot_arms_config: list[dict], brand: str) -> lis
 
 def spawn_ur_robot(launch_nodes: list, robot_arm: dict, previous_final_action=None):
     ns = robot_arm["name"]
+    # coords = robot_arm["base_coordinates"]
+    # x = float(coords["x"])
+    # y = float(coords["y"])
+    # z = float(coords["z"])
+    # yaw = float(coords["Y"])
+    # x_str = robot_arm['x']
+    # y_str = robot_arm['y']
+    # z_str = robot_arm['z']
+    # yaw_str = robot_arm['Y']
+    # print("COORDINATES:")
+    # print(robot_arm)
+    # print(x_str, y_str, z_str,yaw_str)
     robot_description_content = ParameterValue(
         Command(
             [
@@ -318,6 +330,13 @@ def launch_setup(context, *args, **kwargs):
 def generate_launch_description():
     declared_arguments = []
     # UR specific arguments
+    
+    # rviz_config_file = os.path.join(
+    #     get_package_share_directory('multi_arm_lab_sim_bringup'),
+    #     'config',
+    #     'ur3_moveit2_multi.rviz'
+    # )
+
     declared_arguments.append(
         DeclareLaunchArgument(
             "safety_limits",
@@ -399,5 +418,13 @@ def generate_launch_description():
     )
 
     return LaunchDescription(
-        declared_arguments + [OpaqueFunction(function=launch_setup)]
+        declared_arguments + [OpaqueFunction(function=launch_setup)] #+ 
+        # [Node(
+        #     package='rviz2',
+        #     executable='rviz2',
+        #     name='rviz2',
+        #     output='screen',
+        #     # arguments=['-d', rviz_config_file],
+        #     condition=IfCondition(LaunchConfiguration('launch_rviz'))
+        # )]
     )
