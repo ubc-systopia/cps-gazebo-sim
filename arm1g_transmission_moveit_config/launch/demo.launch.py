@@ -12,6 +12,8 @@ from ament_index_python.packages import get_package_share_directory
 
 from moveit_configs_utils import MoveItConfigsBuilder
 from moveit_configs_utils.launches import generate_rsp_launch, generate_move_group_launch
+from launch.actions import IncludeLaunchDescription, RegisterEventHandler
+from launch.event_handlers import OnProcessStart
 
 
 def generate_launch_description():
@@ -50,12 +52,79 @@ def generate_launch_description():
             "-x", "0", "-y", "0", "-z", "0.0",
         ],
     )
-    delayed_spawn = TimerAction(period=2.0, actions=[spawn_entity])
 
-    # ── 4. Assemble and return ──────────────────────────────────────────────
+    # ── 4. ROS2‑control spawners (one per arm) ────────────────────────────────
+    # common helper
+    # def make_spawner(ns: str, controller: str):
+    #     return Node(
+    #         package="controller_manager",
+    #         executable="spawner",
+    #         # namespace=ns,                                    # ➊ namespace
+    #         arguments=[
+    #             controller,
+    #             "-c", f"multi_arm/{ns}/controller_manager"  # ➋ full path
+    #         ],
+    #         output="screen",
+    #     )
+    ### ---
+    # def make_spawner(ns: str, controller: str):
+    # # This now targets the new unique controller manager names, e.g., "arm1_controller_manager"
+    # # We also add the controller name from the ros2_controllers.yaml file, e.g. "arm1_joint_trajectory_controller"
+    # # We also add the controller name from the ros2_controllers.yaml file, e.g. "arm1_joint_trajectory_controller"
+    #     if "joint_trajectory_controller" in controller:
+    #         controller = ns + "_" + controller
+    #     return Node(
+    #         package="controller_manager",
+    #         executable="spawner",
+    #         arguments=[
+    #             controller,
+    #             "-c", f"{ns}_controller_manager"
+    #         ],
+    #         output="screen",
+    # )
+
+    # spawners = [
+    #     # arm 1
+    #     make_spawner("arm1", "joint_state_broadcaster"),
+    #     make_spawner("arm1", "joint_trajectory_controller"),
+    #     # arm 2
+    #     make_spawner("arm2", "joint_state_broadcaster"),
+    #     make_spawner("arm2", "joint_trajectory_controller"),
+    # ]
+    # ---
+    def make_spawner(manager: str, controller: str):
+        return Node(
+            package="controller_manager",
+            executable="spawner",
+            arguments=[controller, "-c", manager],
+            output="screen",
+        )
+    
+    unified_controller_manager = "multi_arm_controller_manager"
+
+    # List of all controllers to be spawned
+    spawners = [
+        # Spawners for arm 1
+        make_spawner(unified_controller_manager, "arm1_joint_state_broadcaster"),
+        make_spawner(unified_controller_manager, "arm1_joint_trajectory_controller"),
+        # Spawners for arm 2
+        make_spawner(unified_controller_manager, "arm2_joint_state_broadcaster"),
+        make_spawner(unified_controller_manager, "arm2_joint_trajectory_controller"),
+    ]
+
+    # Run all spawners two seconds after the entity is in the world
+    delayed_controllers = RegisterEventHandler(
+        event_handler=OnProcessStart(
+            target_action=spawn_entity,
+            on_start=spawners,
+        )
+    )
+
+    # ── 5. Assemble LD ───────────────────────────────────────────────────────
     return LaunchDescription([
         gz_sim,
         rsp_launch,
-        delayed_spawn,       # wait a bit, then insert robot
+        spawn_entity,            # inserted immediately
+        delayed_controllers,     # controllers 2 s later
         move_group_launch,
     ])

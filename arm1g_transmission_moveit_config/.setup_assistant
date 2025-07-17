@@ -1,0 +1,10 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: multi_ur_description
+    relative_path: urdf/arm1g_transmission.urdf
+  srdf:
+    relative_path: config/mutli_arm.srdf
+  package_settings:
+    author_name: Roman Sinkus
+    author_email: sinkusroman@gmail.com
+    generated_timestamp: 1752604850

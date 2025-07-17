@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="mutli_arm">
+  <!-- declare arguments -->
+  <xacro:arg name="name"        default="arm1"/>
+  <xacro:arg name="x"           default="-2.0"/>
+  <xacro:arg name="y"           default="-2.0"/>
+  <xacro:arg name="z"           default="0.0"/>
+  <xacro:arg name="Y"           default="0.0"/>
+  <xacro:arg name="ur_type"     default="ur3e"/>
+  <!-- world reference frame -->
+  <link name="world"/>
+
+  <!-- include the core URDF macro definitions -->
+  <xacro:include filename="$(find multi_ur_description)/urdf/ur_macro.xacro"/>
+
+  <!-- instantiate the UR robot kinematic chain -->
+  <xacro:ur_robot
+    name="$arm1"
+    tf_prefix="arm1"
+    parent="world"
+    joint_limits_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/joint_limits.yaml"
+    kinematics_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/default_kinematics.yaml"
+    physical_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/physical_parameters.yaml"
+    visual_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/visual_parameters.yaml"
+    sim_gazebo="false"
+    sim_ignition="true">
+    <origin xyz="0.25 0.25 $(arg z)" rpy="0 0 $(arg Y)"/>
+  </xacro:ur_robot>
+
+  <xacro:ur_robot
+    name="arm1"
+    tf_prefix="arm2_"
+    parent="world"
+    joint_limits_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/joint_limits.yaml"
+    kinematics_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/default_kinematics.yaml"
+    physical_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/physical_parameters.yaml"
+    visual_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/visual_parameters.yaml"
+    sim_gazebo="false"
+    sim_ignition="true">
+    <origin xyz="-2.2 -2.0 $(arg z)" rpy="0 0 $(arg Y)"/>
+  </xacro:ur_robot>
+</robot>
+
+

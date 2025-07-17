@@ -14,7 +14,7 @@ class RealisticCollisionTester(Node):
         super().__init__('realistic_collision_tester')
         
         self.state_validity_client = self.create_client(GetStateValidity, '/check_state_validity')
-        self.get_logger().info('🔍 Checking MoveIt collision detection service...')
+        self.get_logger().info('Waiting for demo.launch.py')
         if self.state_validity_client.wait_for_service(timeout_sec=10.0):
             self.get_logger().info('Collision detection service available!')
         else:

@@ -1,0 +1,32 @@
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="arm1">
+  <!-- tell the parser that there really is a world frame -->
+  <link name="world"/>
+
+  <xacro:arg name="name" default="arm1"/>
+  <xacro:arg name="x"    default="-2.0"/>
+  <xacro:arg name="y"    default="-2.0"/>
+  <xacro:arg name="z"    default="0.0"/>
+  <xacro:arg name="Y"    default="0.0"/>
+  <xacro:arg name="ur_type" default="ur3e"/>
+
+  <!-- then include ur_macro and invoke your <xacro:ur_robot> … -->
+  <!-- your other needed args… -->
+
+  <!-- bring in just the macro definitions -->
+  <xacro:include filename="$(find multi_ur_description)/urdf/ur_macro.xacro"/>
+
+  <!-- invoke the macro directly -->
+  <xacro:ur_robot
+    name="$(arg name)"
+    tf_prefix="$(arg name)_"
+    parent="world"
+    joint_limits_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/joint_limits.yaml"
+    kinematics_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/default_kinematics.yaml"
+    physical_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/physical_parameters.yaml"
+    visual_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/visual_parameters.yaml"
+    sim_gazebo="false"
+    sim_ignition="true"
+  >
+    <origin xyz="$(arg x) $(arg y) $(arg z)" rpy="0 0 $(arg Y)"/>
+  </xacro:ur_robot>
+</robot>
