@@ -19,7 +19,7 @@ from launch.event_handlers import OnProcessStart
 def generate_launch_description():
     # ── 1. MoveIt bits ───────────────────────────────────────────────────────
     moveit_cfg = (
-        MoveItConfigsBuilder("mutli_arm",
+        MoveItConfigsBuilder("multi_arm",
                              package_name="arm1g_transmission_moveit_config")
         .to_moveit_configs()
     )
@@ -99,17 +99,15 @@ def generate_launch_description():
             arguments=[controller, "-c", manager],
             output="screen",
         )
-    
-    unified_controller_manager = "multi_arm_controller_manager"
 
-    # List of all controllers to be spawned
+    # Use the default controller manager since that's what's actually working
+    working_controller_manager = "controller_manager"
+
+    # List of all controllers to be spawned - using the working controller manager
     spawners = [
-        # Spawners for arm 1
-        make_spawner(unified_controller_manager, "arm1_joint_state_broadcaster"),
-        make_spawner(unified_controller_manager, "arm1_joint_trajectory_controller"),
-        # Spawners for arm 2
-        make_spawner(unified_controller_manager, "arm2_joint_state_broadcaster"),
-        make_spawner(unified_controller_manager, "arm2_joint_trajectory_controller"),
+        make_spawner(working_controller_manager, "arm1_joint_trajectory_controller"),
+        make_spawner(working_controller_manager, "arm2_joint_trajectory_controller"),
+        make_spawner(working_controller_manager, "joint_state_broadcaster"),
     ]
 
     # Run all spawners two seconds after the entity is in the world

@@ -60,10 +60,11 @@
           package. Users CANNOT rely on this file being available, or stored in
           this location. Nor can they rely on the existence of the macro.
   -->
-  <ros2_control name="arm1" type="system">
+  <ros2_control name="multi_arm_controller_manager" type="system">
     <hardware>
       <plugin>ign_ros2_control/IgnitionSystem</plugin>
     </hardware>
+    <!-- ARM 1 joints -->
     <joint name="arm1shoulder_pan_joint">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
@@ -115,6 +116,67 @@
       <state_interface name="effort"/>
     </joint>
     <joint name="arm1wrist_3_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <!-- initial position for the FakeSystem and simulation -->
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <!-- ARM 2 joints -->
+    <joint name="arm2_shoulder_pan_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <!-- initial position for the FakeSystem and simulation -->
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm2_shoulder_lift_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <!-- initial position for the FakeSystem and simulation -->
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm2_elbow_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <!-- initial position for the FakeSystem and simulation -->
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm2_wrist_1_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <!-- initial position for the FakeSystem and simulation -->
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm2_wrist_2_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <!-- initial position for the FakeSystem and simulation -->
+        <param name="initial_value">0.0</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm2_wrist_3_joint">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -413,71 +475,7 @@
     <parent link="arm1flange"/>
     <child link="arm1tool0"/>
   </joint>
-  <ros2_control name="arm2" type="system">
-    <hardware>
-      <plugin>ign_ros2_control/IgnitionSystem</plugin>
-    </hardware>
-    <joint name="arm2_shoulder_pan_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="arm2_shoulder_lift_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="arm2_elbow_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="arm2_wrist_1_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="arm2_wrist_2_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="arm2_wrist_3_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-  </ros2_control>
+  <!-- Removed duplicate ros2_control section for arm2 - now unified above -->
   <transmission name="arm2_shoulder_pan_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="arm2_shoulder_pan_joint">
@@ -769,7 +767,6 @@
 
   <gazebo>
     <plugin filename="libign_ros2_control-system.so" name="ign_ros2_control::IgnitionROS2ControlPlugin">
-      <controller_manager_node_name>multi_arm_controller_manager</controller_manager_node_name>
       <parameters>$(find arm1g_transmission_moveit_config)/config/multi_arm_controllers.yaml</parameters>
     </plugin>
   </gazebo>
