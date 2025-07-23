@@ -80,7 +80,7 @@
       <command_interface name="velocity"/>
       <state_interface name="position">
         <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
+        <param name="initial_value">-1.57</param>
       </state_interface>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
@@ -100,7 +100,7 @@
       <command_interface name="velocity"/>
       <state_interface name="position">
         <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
+        <param name="initial_value">-1.57</param>
       </state_interface>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
@@ -141,7 +141,7 @@
       <command_interface name="velocity"/>
       <state_interface name="position">
         <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
+        <param name="initial_value">-1.57</param>
       </state_interface>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
@@ -161,7 +161,7 @@
       <command_interface name="velocity"/>
       <state_interface name="position">
         <!-- initial position for the FakeSystem and simulation -->
-        <param name="initial_value">0.0</param>
+        <param name="initial_value">-1.57 </param>
       </state_interface>
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
@@ -379,7 +379,7 @@
   </link>
   <!-- base_joint fixes base_link to the environment -->
   <joint name="arm1base_joint" type="fixed">
-    <origin rpy="0 0 0.0" xyz="-2.0 -2.0 0.0"/>
+    <origin rpy="0 0 0.0" xyz="0 0 0.0"/>
     <parent link="world"/>
     <child link="arm1base_link"/>
   </joint>
@@ -668,7 +668,7 @@
   </link>
   <!-- base_joint fixes base_link to the environment -->
   <joint name="arm2_base_joint" type="fixed">
-    <origin rpy="0 0 0.0" xyz="-2.2 -2.0 0.0"/>
+    <origin rpy="0 0 0.0" xyz="1.0 1.0 0.0"/>
     <parent link="world"/>
     <child link="arm2_base_link"/>
   </joint>
