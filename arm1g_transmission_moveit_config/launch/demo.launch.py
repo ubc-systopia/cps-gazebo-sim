@@ -5,9 +5,10 @@
 import os
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.actions import IncludeLaunchDescription, TimerAction, DeclareLaunchArgument
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
+from launch.substitutions import LaunchConfiguration
 from ament_index_python.packages import get_package_share_directory
 
 from moveit_configs_utils import MoveItConfigsBuilder
@@ -18,11 +19,28 @@ from launch.event_handlers import OnProcessStart
 
 def generate_launch_description():
     # ── 1. MoveIt bits ───────────────────────────────────────────────────────
+    use_sim_time_arg = DeclareLaunchArgument(
+        "use_sim_time",
+        default_value="true",
+        description="Use simulation (Gazebo) clock if true",
+    )
+
+    use_sim_time = LaunchConfiguration('use_sim_time')
+
+    # use_sim_time = LaunchConfiguration('use_sim_time')
+    
     moveit_cfg = (
         MoveItConfigsBuilder("multi_arm",
                              package_name="arm1g_transmission_moveit_config")
         .to_moveit_configs()
     )
+
+    # print("MoveIt Configs:", moveit_cfg)
+
+    moveit_cfg.robot_description["use_sim_time"] = use_sim_time
+    moveit_cfg.planning_scene_monitor["use_sim_time"] = use_sim_time
+    moveit_cfg.trajectory_execution["use_sim_time"] = use_sim_time
+
     rsp_launch        = generate_rsp_launch(moveit_cfg)
     move_group_launch = generate_move_group_launch(moveit_cfg)
 
@@ -51,6 +69,17 @@ def generate_launch_description():
             "-allow_renaming", "true",
             "-x", "0", "-y", "0", "-z", "0.0",
         ],
+    )
+
+    rviz_node = Node (
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="screen",
+        arguments=["-d", os.path.join(
+            get_package_share_directory("arm1g_transmission_moveit_config"),
+            "config", "multi_arm.rviz"
+        )],
     )
 
     # ── 4. ROS2‑control spawners (one per arm) ────────────────────────────────
@@ -120,9 +149,11 @@ def generate_launch_description():
 
     # ── 5. Assemble LD ───────────────────────────────────────────────────────
     return LaunchDescription([
+        use_sim_time_arg,
         gz_sim,
         rsp_launch,
-        spawn_entity,            # inserted immediately
-        delayed_controllers,     # controllers 2 s later
+        spawn_entity,
+        delayed_controllers,
         move_group_launch,
+        rviz_node
     ])
