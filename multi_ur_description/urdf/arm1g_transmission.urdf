@@ -668,7 +668,7 @@
   </link>
   <!-- base_joint fixes base_link to the environment -->
   <joint name="arm2_base_joint" type="fixed">
-    <origin rpy="0 0 0.0" xyz="1.0 1.0 0.0"/>
+    <origin rpy="0 0 0.0" xyz="0.2 0.2 0.0"/>
     <parent link="world"/>
     <child link="arm2_base_link"/>
   </joint>
