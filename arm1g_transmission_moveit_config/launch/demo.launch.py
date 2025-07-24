@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-#
-# multi_arm_ignition.launch.py  – MoveIt 2 + Ignition Gazebo (blank world)
-#
 import os
 
 from launch import LaunchDescription
@@ -26,16 +23,12 @@ def generate_launch_description():
     )
 
     use_sim_time = LaunchConfiguration('use_sim_time')
-
-    # use_sim_time = LaunchConfiguration('use_sim_time')
     
     moveit_cfg = (
         MoveItConfigsBuilder("multi_arm",
                              package_name="arm1g_transmission_moveit_config")
         .to_moveit_configs()
     )
-
-    # print("MoveIt Configs:", moveit_cfg)
 
     moveit_cfg.robot_description["use_sim_time"] = use_sim_time
     moveit_cfg.planning_scene_monitor["use_sim_time"] = use_sim_time
@@ -51,14 +44,13 @@ def generate_launch_description():
             os.path.join(ros_gz_sim_share, "launch", "gz_sim.launch.py")
         ),
         launch_arguments={
-            # String, not list → what gz_sim.launch.py expects
             "gz_args": "-r empty.sdf",   # start immediately (-r) with the built‑in blank world
             # "gui": "false",            # uncomment for headless
         }.items(),
     )
 
     # ── 3. Spawn the robot after a short delay ──────────────────────────────
-    # A 2‑second timer is usually enough for /robot_description to appear.
+    # A 2‑second timer for /robot_description to appear.
     spawn_entity = Node(
         package="ros_gz_sim",
         executable="create",
@@ -83,44 +75,6 @@ def generate_launch_description():
     )
 
     # ── 4. ROS2‑control spawners (one per arm) ────────────────────────────────
-    # common helper
-    # def make_spawner(ns: str, controller: str):
-    #     return Node(
-    #         package="controller_manager",
-    #         executable="spawner",
-    #         # namespace=ns,                                    # ➊ namespace
-    #         arguments=[
-    #             controller,
-    #             "-c", f"multi_arm/{ns}/controller_manager"  # ➋ full path
-    #         ],
-    #         output="screen",
-    #     )
-    ### ---
-    # def make_spawner(ns: str, controller: str):
-    # # This now targets the new unique controller manager names, e.g., "arm1_controller_manager"
-    # # We also add the controller name from the ros2_controllers.yaml file, e.g. "arm1_joint_trajectory_controller"
-    # # We also add the controller name from the ros2_controllers.yaml file, e.g. "arm1_joint_trajectory_controller"
-    #     if "joint_trajectory_controller" in controller:
-    #         controller = ns + "_" + controller
-    #     return Node(
-    #         package="controller_manager",
-    #         executable="spawner",
-    #         arguments=[
-    #             controller,
-    #             "-c", f"{ns}_controller_manager"
-    #         ],
-    #         output="screen",
-    # )
-
-    # spawners = [
-    #     # arm 1
-    #     make_spawner("arm1", "joint_state_broadcaster"),
-    #     make_spawner("arm1", "joint_trajectory_controller"),
-    #     # arm 2
-    #     make_spawner("arm2", "joint_state_broadcaster"),
-    #     make_spawner("arm2", "joint_trajectory_controller"),
-    # ]
-    # ---
     def make_spawner(manager: str, controller: str):
         return Node(
             package="controller_manager",
@@ -147,7 +101,7 @@ def generate_launch_description():
         )
     )
 
-    # ── 5. Assemble LD ───────────────────────────────────────────────────────
+    # ── 5. Assemble Launch Description ───────────────────────────────────────────────────────
     return LaunchDescription([
         use_sim_time_arg,
         gz_sim,
