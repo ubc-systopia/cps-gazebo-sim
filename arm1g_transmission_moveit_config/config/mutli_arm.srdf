@@ -16,43 +16,22 @@
         <chain base_link="arm2_base_link_inertia" tip_link="arm2_tool0"/>
     </group>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
+    
+    <!-- ARM1 SELF-COLLISION DISABLES (keep these for proper robot operation) -->
     <disable_collisions link1="arm1base_link_inertia" link2="arm1shoulder_link" reason="Adjacent"/>
     <disable_collisions link1="arm1base_link_inertia" link2="arm1upper_arm_link" reason="Never"/>
     <disable_collisions link1="arm1base_link_inertia" link2="arm1wrist_1_link" reason="Never"/>
     <disable_collisions link1="arm1base_link_inertia" link2="arm1wrist_2_link" reason="Never"/>
-    <disable_collisions link1="arm1base_link_inertia" link2="arm2_base_link_inertia" reason="Adjacent"/>
-    <disable_collisions link1="arm1base_link_inertia" link2="arm2_forearm_link" reason="Never"/>
-    <disable_collisions link1="arm1base_link_inertia" link2="arm2_shoulder_link" reason="Never"/>
-    <disable_collisions link1="arm1base_link_inertia" link2="arm2_upper_arm_link" reason="Never"/>
-    <disable_collisions link1="arm1base_link_inertia" link2="arm2_wrist_1_link" reason="Never"/>
-    <disable_collisions link1="arm1base_link_inertia" link2="arm2_wrist_2_link" reason="Never"/>
-    <disable_collisions link1="arm1base_link_inertia" link2="arm2_wrist_3_link" reason="Never"/>
     <disable_collisions link1="arm1forearm_link" link2="arm1upper_arm_link" reason="Adjacent"/>
     <disable_collisions link1="arm1forearm_link" link2="arm1wrist_1_link" reason="Adjacent"/>
-    <disable_collisions link1="arm1forearm_link" link2="arm2_base_link_inertia" reason="Never"/>
-    <disable_collisions link1="arm1forearm_link" link2="arm2_shoulder_link" reason="Never"/>
     <disable_collisions link1="arm1shoulder_link" link2="arm1upper_arm_link" reason="Adjacent"/>
     <disable_collisions link1="arm1shoulder_link" link2="arm1wrist_1_link" reason="Never"/>
     <disable_collisions link1="arm1shoulder_link" link2="arm1wrist_2_link" reason="Never"/>
-    <disable_collisions link1="arm1shoulder_link" link2="arm2_base_link_inertia" reason="Never"/>
-    <disable_collisions link1="arm1shoulder_link" link2="arm2_forearm_link" reason="Never"/>
-    <disable_collisions link1="arm1shoulder_link" link2="arm2_shoulder_link" reason="Never"/>
-    <disable_collisions link1="arm1shoulder_link" link2="arm2_upper_arm_link" reason="Never"/>
-    <disable_collisions link1="arm1shoulder_link" link2="arm2_wrist_1_link" reason="Never"/>
-    <disable_collisions link1="arm1shoulder_link" link2="arm2_wrist_2_link" reason="Never"/>
-    <disable_collisions link1="arm1shoulder_link" link2="arm2_wrist_3_link" reason="Never"/>
-    <disable_collisions link1="arm1upper_arm_link" link2="arm2_base_link_inertia" reason="Never"/>
-    <disable_collisions link1="arm1upper_arm_link" link2="arm2_shoulder_link" reason="Never"/>
-    <disable_collisions link1="arm1upper_arm_link" link2="arm2_upper_arm_link" reason="Never"/>
     <disable_collisions link1="arm1wrist_1_link" link2="arm1wrist_2_link" reason="Adjacent"/>
     <disable_collisions link1="arm1wrist_1_link" link2="arm1wrist_3_link" reason="Never"/>
-    <disable_collisions link1="arm1wrist_1_link" link2="arm2_base_link_inertia" reason="Never"/>
-    <disable_collisions link1="arm1wrist_1_link" link2="arm2_shoulder_link" reason="Never"/>
     <disable_collisions link1="arm1wrist_2_link" link2="arm1wrist_3_link" reason="Adjacent"/>
-    <disable_collisions link1="arm1wrist_2_link" link2="arm2_base_link_inertia" reason="Never"/>
-    <disable_collisions link1="arm1wrist_2_link" link2="arm2_shoulder_link" reason="Never"/>
-    <disable_collisions link1="arm1wrist_3_link" link2="arm2_base_link_inertia" reason="Never"/>
-    <disable_collisions link1="arm1wrist_3_link" link2="arm2_shoulder_link" reason="Never"/>
+
+    <!-- ARM2 SELF-COLLISION DISABLES (keep these for proper robot operation) -->
     <disable_collisions link1="arm2_base_link_inertia" link2="arm2_shoulder_link" reason="Adjacent"/>
     <disable_collisions link1="arm2_base_link_inertia" link2="arm2_upper_arm_link" reason="Never"/>
     <disable_collisions link1="arm2_base_link_inertia" link2="arm2_wrist_1_link" reason="Never"/>
@@ -65,4 +44,12 @@
     <disable_collisions link1="arm2_wrist_1_link" link2="arm2_wrist_2_link" reason="Adjacent"/>
     <disable_collisions link1="arm2_wrist_1_link" link2="arm2_wrist_3_link" reason="Never"/>
     <disable_collisions link1="arm2_wrist_2_link" link2="arm2_wrist_3_link" reason="Adjacent"/>
+
+    <!-- BASE-TO-BASE CONNECTION (keep this since the bases are physically connected) -->
+    <disable_collisions link1="arm1base_link_inertia" link2="arm2_base_link_inertia" reason="Adjacent"/>
+
+    <!-- ALL INTER-ARM COLLISIONS ENABLED! -->
+    <!-- Removed all arm1* <-> arm2* disable_collisions rules -->
+    <!-- Now MoveIt will detect and show all inter-arm collisions! -->
+
 </robot>

@@ -1,6 +1,6 @@
 # tests/test_collision.py
 import pytest
-from collision_detection import RealisticCollisionTester
+from tests_b.collision_detection import RealisticCollisionTester
 
 SCENARIOS = [
     (

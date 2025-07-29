@@ -1,6 +1,6 @@
 # tests/test_collision.py
 import pytest
-from collision_detection import RealisticCollisionTester
+from tests_b.collision_detection import RealisticCollisionTester
 
 # Define your three scenarios:
 # name, arm1_positions, arm2_positions, expected_collision, expected_inter, expected_intra
