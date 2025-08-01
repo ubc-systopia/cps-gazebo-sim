@@ -15,7 +15,7 @@ from launch.event_handlers import OnProcessStart
 
 
 def generate_launch_description():
-    # ── 1. MoveIt bits ───────────────────────────────────────────────────────
+    ##### 1. MoveIt
     use_sim_time_arg = DeclareLaunchArgument(
         "use_sim_time",
         default_value="true",
@@ -37,7 +37,7 @@ def generate_launch_description():
     rsp_launch        = generate_rsp_launch(moveit_cfg)
     move_group_launch = generate_move_group_launch(moveit_cfg)
 
-    # ── 2. Ignition Gazebo server + optional GUI ─────────────────────────────
+    #### 2. Ignition Gazebo server + optional GUI
     ros_gz_sim_share = get_package_share_directory("ros_gz_sim")
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -49,8 +49,7 @@ def generate_launch_description():
         }.items(),
     )
 
-    # ── 3. Spawn the robot after a short delay ──────────────────────────────
-    # A 2‑second timer for /robot_description to appear.
+    #### 3. Spawn the robot after a short delay
     spawn_entity = Node(
         package="ros_gz_sim",
         executable="create",
@@ -74,7 +73,7 @@ def generate_launch_description():
         )],
     )
 
-    # ── 4. ROS2‑control spawners (one per arm) ────────────────────────────────
+    #### 4. ROS2‑control spawners (one per arm)
     def make_spawner(manager: str, controller: str):
         return Node(
             package="controller_manager",
@@ -101,7 +100,7 @@ def generate_launch_description():
         )
     )
 
-    # ── 5. Assemble Launch Description ───────────────────────────────────────────────────────
+    #### 5. Create Launch Description
     return LaunchDescription([
         use_sim_time_arg,
         gz_sim,

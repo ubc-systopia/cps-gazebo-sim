@@ -117,6 +117,12 @@ class RobotCollisionHelper(Node):
         return robot_state
         
     def check_collision_state(self, arm1_positions, arm2_positions):
+        '''
+        @brief Check if the robot arms are in a collision state.
+        @param arm1_positions: Joint positions for arm 1.
+        @param arm2_positions: Joint positions for arm 2.
+        @return: Dictionary with collision status and details.
+        '''
         if not self.state_validity_client.service_is_ready():
             return None
             
