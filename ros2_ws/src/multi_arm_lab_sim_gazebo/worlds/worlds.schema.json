@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "worlds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The name of the world. Cannot be an empty string."
+          },
+          "models": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source_model": {
+                  "type": "string",
+                  "description": "The name that corresponds to the package in /multi_arm_lab_sim_description/models."
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "The optional name of the model in the world. Defaults to source_model if not provided. Cannot be empty string."
+                },
+                "pose": {
+                  "type": "string",
+                  "pattern": "^-?\\d+(\\.\\d+)?( \\-?\\d+(\\.\\d+)?){5}$",
+                  "description": "The pose of the model as a string of 6 space-separated numbers [x, y, z, roll, pitch, yaw]."
+                }
+              },
+              "required": [
+                "source_model"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0,
+            "description": "A list of models in the world."
+          }
+        },
+        "required": [
+          "name",
+          "models"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "description": "An array of world objects. Each world has a name and a list of models."
+    }
+  },
+  "required": [
+    "worlds"
+  ],
+  "additionalProperties": false
+}

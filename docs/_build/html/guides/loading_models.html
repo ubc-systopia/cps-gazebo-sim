@@ -16,23 +16,23 @@
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Development" href="development.html" />
     <link rel="prev" title="Creating Custom 3D models" href="creating_models.html" />
-
+   
   <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
 
-
-
-
+  
+  
 
   </head><body>
-
+  
 
     <div class="document">
       <div class="documentwrapper">
         <div class="bodywrapper">
-
+          
 
           <div class="body" role="main">
-
+            
   <section id="adding-models-to-the-simulator">
 <h1>Adding Models to the Simulator<a class="headerlink" href="#adding-models-to-the-simulator" title="Link to this heading">¶</a></h1>
 <section id="uploading-dae-meshes-from-polycam">
@@ -73,7 +73,7 @@
 <section id="creating-and-viewing-worlds">
 <h2>Creating and Viewing Worlds<a class="headerlink" href="#creating-and-viewing-worlds" title="Link to this heading">¶</a></h2>
 <ol class="arabic">
-<li><p><strong>Modify the Configuration File</strong>: Loaded models are available for inclusion in a world, which is an environment that contains a number of models. Worlds are defined in the <code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_gazebo</span></code> package and can be configured in the <a class="reference download internal" download="" href="../_downloads/20d490d3e7b40e23a96e63c1b40652de/worlds_config.json"><span class="xref download myst"><code class="docutils literal notranslate"><span class="pre">worlds_config.json</span></code></span></a> file.</p>
+<li><p><strong>Modify the Configuration File</strong>: Loaded models are available for inclusion in a world, which is an environment that contains a number of models. Worlds are defined in the <code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_gazebo</span></code> package and can be configured in the <a class="reference internal" href="#../../multi_arm_lab_sim_gazebo/worlds/worlds_config.json"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">worlds_config.json</span></code></span></a> file.</p>
 <p>For example, if you loaded models named <code class="docutils literal notranslate"><span class="pre">lab</span></code> and <code class="docutils literal notranslate"><span class="pre">ur3e</span></code>, you can include them in the world configuration as follows:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">    </span><span class="nt">&quot;worlds&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -95,7 +95,7 @@
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>See <a class="reference download internal" download="" href="../_downloads/86c34daf663d5e12f63da6c66ae43693/worlds.schema.json"><span class="xref download myst"><code class="docutils literal notranslate"><span class="pre">worlds.schema.json</span></code></span></a> for details on how to customize the setup of your worlds.</p>
+<p>See <a class="reference internal" href="#../../multi_arm_lab_sim_gazebo/worlds/worlds.schema.json"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">worlds.schema.json</span></code></span></a> for details on how to customize the setup of your worlds.</p>
 </li>
 <li><p><strong>Create the Worlds</strong>: To generate the worlds that you configured, run the <a class="reference download internal" download="" href="../_downloads/38edc91953c7398086e689e5f5704a2c/create_worlds.py"><span class="xref download myst"><code class="docutils literal notranslate"><span class="pre">create_worlds.py</span></code></span></a> script. This will produce <code class="docutils literal notranslate"><span class="pre">.sdf</span></code> files in the <code class="docutils literal notranslate"><span class="pre">multi_arm_lab_sim_gazebo/worlds</span></code> directory:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>scripts/create_worlds.py
@@ -113,7 +113,7 @@
 
 
           </div>
-
+          
         </div>
       </div>
       <div class="sphinxsidebar" role="navigation" aria-label="Main">
@@ -139,7 +139,6 @@
 <script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../quick_info/custom_packages.html">Custom packages</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../quick_info/software_dependencies_and_versions.html">Software dependencies and versions</a></li>
 <li class="toctree-l1"><a class="reference internal" href="creating_models.html">Creating Custom 3D models</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Adding Models to the Simulator</a><ul>
@@ -148,6 +147,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="development.html">Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="customized_vendor_packages.html">Customized Vendor Packages</a></li>
 </ul>
 
 <div class="relations">
@@ -173,18 +173,18 @@
     </div>
     <div class="footer">
       &#169;2024, Iris Xu.
-
+      
       |
       Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.0.2</a>
       &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
-
+      
       |
       <a href="../_sources/guides/loading_models.md.txt"
           rel="nofollow">Page source</a>
     </div>
 
+    
 
-
-
+    
   </body>
 </html>

@@ -1,0 +1,10 @@
+repositories:
+  Universal_Robots_ROS2_Driver:
+      type: git
+      url: git@github.com:ubc-systopia/Universal_Robots_ROS2_Driver.git
+      version: humble
+
+  Universal_Robots_ROS2_Description:
+    type: git
+    url: git@github.com:ubc-systopia/Universal_Robots_ROS2_Description.git
+    version: humble

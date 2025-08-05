@@ -1,9 +1,13 @@
 # ROS2 specific
-install/
-build/
-log/
+ros2_ws/install/
+ros2_ws/build/
+ros2_ws/log/
 .colcon/
 .colcon_cache/
+
+# Ignore vendor package contents but track empty folder
+ros2_ws/src/vendors/*
+!ros2_ws/src/vendors/.gitkeep
 
 # Gazebo
 *.log
@@ -63,3 +67,7 @@ __pycache__/
 
 # AI tools
 *claude
+
+# Allow repos files
+!*.repos
+

@@ -46,12 +46,6 @@ https://docs.trossenrobotics.com/interbotix_xsarms_docs/ros_interface/ros2/softw
 sudo apt install ros-humble-moveit
 ```
 
-### Drivers for Robots
-|Robot|Installation Link|
-|---|---|
-|ViperX 300s|https://docs.trossenrobotics.com/interbotix_xsarms_docs/ros_interface/ros2/software_setup.html|
-|UR3e series|https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver/tree/humble|
-
 ## To run
 
 Build
