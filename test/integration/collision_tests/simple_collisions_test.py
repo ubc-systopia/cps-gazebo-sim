@@ -2,15 +2,15 @@ import pytest
 import time
 import rclpy
 
-from collision_tests.utils.collision_scenarios import DEFAULT_COLLISION_SCENARIOS
-from collision_tests.utils.gazebo_launcher import GazeboLauncher
-from collision_tests.utils.robot_collision_helper import RobotCollisionHelper
+from test.integration.collision_tests.utils.collision_scenarios import DEFAULT_COLLISION_SCENARIOS
+from test.integration.collision_tests.utils.gazebo_launcher import GazeboLauncher
+from test.integration.collision_tests.utils.robot_collision_helper import RobotCollisionHelper
 
 
 class TestSimpleCollisions:
     @classmethod
     def setup_class(cls):
-        launch_file_path = "/home/roman/code/cps-gazebo-sim-2/arm1g_transmission_moveit_config/launch/demo.launch.py"
+        launch_file_path = "/home/roman/code/cps-gazebo-sim-2/src/arm1g_transmission_moveit_config/launch/demo.launch.py"
         cls.gazebo_launcher = GazeboLauncher(launch_file_path)
         
         success = cls.gazebo_launcher.launch_gazebo()

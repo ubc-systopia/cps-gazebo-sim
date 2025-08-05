@@ -19,7 +19,7 @@ class GazeboLauncher:
     def launch_gazebo(self) -> bool:
         try:
             workspace_dir = "/home/roman/code/cps-gazebo-sim-2"
-            headless_launch_file = "/home/roman/code/cps-gazebo-sim-2/collision_tests/utils/headless_demo.launch.py"
+            headless_launch_file = "/home/roman/code/cps-gazebo-sim-2/test/integration/collision_tests/utils/headless_demo.launch.py"
             
             launch_cmd = [
                 "bash", "-c", 
