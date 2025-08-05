@@ -1,7 +1,7 @@
 # ROS2 specific
-ros2_ws/install/
-ros2_ws/build/
-ros2_ws/log/
+*install/
+*build/
+*log/
 .colcon/
 .colcon_cache/
 
