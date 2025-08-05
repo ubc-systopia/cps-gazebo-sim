@@ -1,0 +1,11 @@
+#!/bin/bash
+# Controllers, Gazebo, Rviz, MoveIt for Multiple Robots
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
+
+source /opt/ros/humble/setup.bash
+cd "$WORKSPACE_DIR"
+source install/setup.bash
+
+ros2 launch arm1g_transmission_moveit_config demo.launch.py "$@"

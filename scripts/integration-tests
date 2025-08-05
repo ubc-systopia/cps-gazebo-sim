@@ -1,0 +1,11 @@
+#!/bin/bash
+# CPS Integration Tests
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_DIR="$(dirname "$SCRIPT_DIR")"
+
+cd "$WORKSPACE_DIR"
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+
+pytest test/integration "$@"

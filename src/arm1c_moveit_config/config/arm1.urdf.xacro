@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="arm1">
+    <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
+
+    <!-- Import arm1 urdf file -->
+    <xacro:include filename="$(find multi_ur_description)/urdf/arm1c.urdf" />
+
+    <!-- Don't include the extra ros2_control - the main URDF already has ign_ros2_control -->
+
+</robot>

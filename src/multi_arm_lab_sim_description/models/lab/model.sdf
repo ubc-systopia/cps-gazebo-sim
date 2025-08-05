@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.8">
+  <model name="lab">
+    <static>true</static>
+    <link name="link">
+      <collision name="object_collision">
+        <geometry>
+          <mesh>
+            <uri>lab.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name="object_visual">
+        <geometry>
+          <mesh>
+            <uri>lab.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

@@ -16,6 +16,7 @@ ros2_ws/src/vendors/*
 *.pyc
 *.pyo
 __pycache__/
+.python-version
 
 # macOS
 .DS_Store
@@ -64,5 +65,9 @@ __pycache__/
 *.out
 *.app
 
+# AI tools
+*claude
+
 # Allow repos files
 !*.repos
+

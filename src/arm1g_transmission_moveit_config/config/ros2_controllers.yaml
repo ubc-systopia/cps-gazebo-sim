@@ -1,0 +1,42 @@
+# This config file is used by ros2_control
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    ur3e_arm1_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+
+    ur3e_arm2_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+ur3e_arm1_controller:
+  ros__parameters:
+    joints:
+      - arm1shoulder_pan_joint
+      - arm1shoulder_lift_joint
+      - arm1elbow_joint
+      - arm1wrist_1_joint
+      - arm1wrist_2_joint
+      - arm1wrist_3_joint
+    command_interfaces:
+      []
+    state_interfaces:
+      []
+ur3e_arm2_controller:
+  ros__parameters:
+    joints:
+      - arm2_shoulder_pan_joint
+      - arm2_shoulder_lift_joint
+      - arm2_elbow_joint
+      - arm2_wrist_1_joint
+      - arm2_wrist_2_joint
+      - arm2_wrist_3_joint
+    command_interfaces:
+      []
+    state_interfaces:
+      []

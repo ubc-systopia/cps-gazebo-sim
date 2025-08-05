@@ -1,0 +1,15 @@
+# Default initial positions for mutli_arm's ros2_control fake system
+
+initial_positions:
+  arm1elbow_joint: 0
+  arm1shoulder_lift_joint: 0
+  arm1shoulder_pan_joint: 0
+  arm1wrist_1_joint: 0
+  arm1wrist_2_joint: 0
+  arm1wrist_3_joint: 0
+  arm2_elbow_joint: 0
+  arm2_shoulder_lift_joint: 0
+  arm2_shoulder_pan_joint: 0
+  arm2_wrist_1_joint: 0
+  arm2_wrist_2_joint: 0
+  arm2_wrist_3_joint: 0

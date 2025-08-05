@@ -1,0 +1,25 @@
+# In arm1_controllers.yaml
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    arm1_joint_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+arm1_joint_trajectory_controller:
+  ros__parameters:
+    joints:
+      - arm1shoulder_pan_joint
+      - arm1shoulder_lift_joint
+      - arm1elbow_joint
+      - arm1wrist_1_joint
+      - arm1wrist_2_joint
+      - arm1wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity

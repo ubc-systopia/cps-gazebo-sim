@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.8">
+  <model name="thermoshaker">
+    <static>true</static>
+    <link name="link">
+      	<collision name="object_collision">
+			<geometry>
+				<mesh>
+					<uri>meshes/thermoshaker.dae</uri>
+				</mesh>
+			</geometry>
+		</collision>
+		<visual name="object_visual">
+			<geometry>
+				<mesh>
+					<uri>meshes/thermoshaker.dae</uri>
+				</mesh>
+			</geometry>
+		</visual>
+    </link>
+
+	<plugin filename="ignition-gazebo-touchplugin-system"
+                name="ignition::gazebo::systems::TouchPlugin">
+            <time>0.001</time>
+            <enabled>true</enabled>
+	</plugin>
+  </model>
+</sdf>

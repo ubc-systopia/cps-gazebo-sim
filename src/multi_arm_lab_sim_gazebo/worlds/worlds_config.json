@@ -1,0 +1,18 @@
+{
+  "worlds": [
+    {
+      "name": "lab",
+      "models": [
+        {
+          "source_model": "thermoshaker",
+          "pose": "0 0 0 0 0 -2.5"
+        },
+        {
+          "source_model": "test_tube",
+          "name": "test_tube",
+          "pose": "0.25 0 1.5 0 0 0"
+        }
+      ]
+    }
+  ]
+}
