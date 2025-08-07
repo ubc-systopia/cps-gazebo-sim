@@ -15,7 +15,7 @@ from launch.event_handlers import OnProcessStart
 
 
 def generate_launch_description():
-    # ── 1. MoveIt bits ───────────────────────────────────────────────────────
+    ##### 1. MoveIt
     use_sim_time_arg = DeclareLaunchArgument(
         "use_sim_time",
         default_value="true",
@@ -37,19 +37,19 @@ def generate_launch_description():
     rsp_launch        = generate_rsp_launch(moveit_cfg)
     move_group_launch = generate_move_group_launch(moveit_cfg)
 
-    # ── 2. Ignition Gazebo server HEADLESS (no GUI) ─────────────────────────────
+    #### 2. Ignition Gazebo server + optional GUI
     ros_gz_sim_share = get_package_share_directory("ros_gz_sim")
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(ros_gz_sim_share, "launch", "gz_sim.launch.py")
         ),
         launch_arguments={
-            "gz_args": "-r -s empty.sdf",   # -s for server only (no GUI), -r to start immediately
-            "gui": "false",                 # Explicitly disable GUI
+            "gz_args": "-r empty.sdf",   # start immediately (-r) with the built‑in blank world
+            # "gui": "false",            # uncomment for headless
         }.items(),
     )
 
-    # ── 3. Spawn the robot after a short delay ──────────────────────────────
+    #### 3. Spawn the robot after a short delay
     spawn_entity = Node(
         package="ros_gz_sim",
         executable="create",
@@ -62,7 +62,18 @@ def generate_launch_description():
         ],
     )
 
-    # ── 4. ROS2‑control spawners (one per arm) ────────────────────────────────
+    rviz_node = Node (
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        output="screen",
+        arguments=["-d", os.path.join(
+            get_package_share_directory("two_arm_moveit_config"),
+            "config", "multi_arm.rviz"
+        )],
+    )
+
+    #### 4. ROS2‑control spawners (one per arm)
     def make_spawner(manager: str, controller: str):
         return Node(
             package="controller_manager",
@@ -89,7 +100,7 @@ def generate_launch_description():
         )
     )
 
-    # ── 5. Assemble Launch Description (NO RVIZ!) ───────────────────────────────────────────────────────
+    #### 5. Create Launch Description
     return LaunchDescription([
         use_sim_time_arg,
         gz_sim,
@@ -97,5 +108,5 @@ def generate_launch_description():
         spawn_entity,
         delayed_controllers,
         move_group_launch,
-        # NOTE: RViz node removed for headless operation!
+        rviz_node
     ])

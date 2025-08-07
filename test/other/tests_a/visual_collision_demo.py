@@ -39,7 +39,7 @@ class VisualCollisionDemo(Node):
             self.get_logger().info('✅ Collision detection service available!')
         else:
             self.get_logger().error('❌ Collision detection service not available!')
-            self.get_logger().error('   Make sure MoveIt is running with: ros2 launch arm1g_transmission_moveit_config demo.launch.py')
+            self.get_logger().error('   Make sure MoveIt is running with: ros2 launch two_arm_moveit_config demo.launch.py')
             return
         
         # Joint names for each arm

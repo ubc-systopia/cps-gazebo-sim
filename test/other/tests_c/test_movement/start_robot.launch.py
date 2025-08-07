@@ -11,7 +11,7 @@ def generate_launch_description():
     demo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(
-                get_package_share_directory('arm1g_transmission_moveit_config'),
+                get_package_share_directory('two_arm_moveit_config'),
                 'launch',
                 'demo.launch.py'
             )
