@@ -767,7 +767,7 @@
 
   <gazebo>
     <plugin filename="libign_ros2_control-system.so" name="ign_ros2_control::IgnitionROS2ControlPlugin">
-      <parameters>$(find arm1g_transmission_moveit_config)/config/multi_arm_controllers.yaml</parameters>
+      <parameters>$(find two_arm_moveit_config)/config/multi_arm_controllers.yaml</parameters>
     </plugin>
   </gazebo>
 

@@ -10,7 +10,7 @@ from test.integration.collision_tests.utils.robot_collision_helper import RobotC
 class TestSimpleCollisions:
     @classmethod
     def setup_class(cls):
-        launch_file_path = "/home/roman/code/cps-gazebo-sim-2/src/arm1g_transmission_moveit_config/launch/demo.launch.py"
+        launch_file_path = "/home/roman/code/cps-gazebo-sim-2/src/two_arm_moveit_config/launch/demo.launch.py"
         cls.gazebo_launcher = GazeboLauncher(launch_file_path)
         
         success = cls.gazebo_launcher.launch_gazebo()

@@ -9,7 +9,7 @@ build:
 demo:
 	@source /opt/ros/humble/setup.bash && \
 	source install/setup.bash && \
-	ros2 launch arm1g_transmission_moveit_config demo.launch.py
+	ros2 launch two_arm_moveit_config demo.launch.py
 
 # Run integration tests
 test:

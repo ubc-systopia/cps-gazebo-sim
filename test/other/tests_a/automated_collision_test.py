@@ -112,7 +112,7 @@ class AutomatedCollisionTest(Node):
             f"source /opt/ros/humble/setup.bash && "
             f"cd {workspace_dir} && "
             f"source install/setup.bash && "
-            f"ros2 launch arm1g_transmission_moveit_config demo.launch.py"
+            f"ros2 launch two_arm_moveit_config demo.launch.py"
         ]
         
         try:
