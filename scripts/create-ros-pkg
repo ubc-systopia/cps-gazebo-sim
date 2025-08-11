@@ -1,0 +1,608 @@
+#!/bin/bash
+
+# create-ros-pkg - Enhanced script to create ROS packages with multiple UR robots
+
+set -e
+
+# Resolve workspace root and src directory (script is in <ws>/scripts)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+SRC_DIR="${WORKSPACE_ROOT}/src"
+
+# Available UR robot types (from multi_ur_description/config)
+UR_TYPES=("ur3" "ur3e" "ur5" "ur5e" "ur10" "ur10e" "ur16e" "ur20" "ur30")
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Arrays to store robot configurations
+declare -a ROBOT_UR_TYPES
+declare -a ROBOT_X_POSITIONS
+declare -a ROBOT_Y_POSITIONS
+declare -a ROBOT_Z_POSITIONS
+declare -a ROBOT_ROLLS
+declare -a ROBOT_PITCHES
+declare -a ROBOT_YAWS
+declare -a ROBOT_SHOULDER_PANS
+declare -a ROBOT_SHOULDER_LIFTS
+declare -a ROBOT_ELBOWS
+declare -a ROBOT_WRIST_1S
+declare -a ROBOT_WRIST_2S
+declare -a ROBOT_WRIST_3S
+
+# Function to print colored output
+print_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to validate numeric input
+validate_number() {
+    local input=$1
+    local min=$2
+    local max=$3
+    
+    if ! [[ "$input" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi
+    
+    if [ "$input" -lt "$min" ] || [ "$input" -gt "$max" ]; then
+        return 1
+    fi
+    
+    return 0
+}
+
+# Function to validate float input
+validate_float() {
+    local input=$1
+    if ! [[ "$input" =~ ^-?[0-9]+\.?[0-9]*$ ]]; then
+        return 1
+    fi
+    return 0
+}
+
+# Function to get user input with validation
+get_number_input() {
+    local prompt=$1
+    local min=$2
+    local max=$3
+    local input
+    
+    while true; do
+        echo -n "$prompt ($min-$max): " >&2
+        read input
+        
+        if validate_number "$input" "$min" "$max"; then
+            echo "$input"
+            return 0
+        else
+            print_error "Please enter a valid number between $min and $max" >&2
+        fi
+    done
+}
+
+# Function to get float input with validation
+get_float_input() {
+    local prompt=$1
+    local input
+    
+    while true; do
+        echo -n "$prompt: " >&2
+        read input
+        
+        if validate_float "$input"; then
+            echo "$input"
+            return 0
+        else
+            print_error "Please enter a valid number (e.g., 1.57, -2.0, 0)" >&2
+        fi
+    done
+}
+
+# Function to select UR robot type
+select_ur_type() {
+    local robot_num=$1
+    
+    echo "" >&2
+    print_info "Available UR robot types for Robot $robot_num:" >&2
+    for i in "${!UR_TYPES[@]}"; do
+        echo "  $((i+1)). ${UR_TYPES[i]}" >&2
+    done
+    
+    local choice
+    choice=$(get_number_input "Select UR robot type" 1 ${#UR_TYPES[@]})
+    echo "${UR_TYPES[$((choice-1))]}"
+}
+
+# Function to get robot configuration
+get_robot_config() {
+    local robot_num=$1
+    local index=$((robot_num-1))
+    
+    print_info "Configuring Robot $robot_num"
+    echo ""
+    
+    # Get UR type
+    ROBOT_UR_TYPES[$index]=$(select_ur_type "$robot_num")
+    
+    # Get starting position (x, y, z)
+    echo ""
+    print_info "Starting position for Robot $robot_num:"
+    ROBOT_X_POSITIONS[$index]=$(get_float_input "X position (meters)")
+    ROBOT_Y_POSITIONS[$index]=$(get_float_input "Y position (meters)")  
+    ROBOT_Z_POSITIONS[$index]=$(get_float_input "Z position (meters)")
+    
+    # Get starting orientation (roll, pitch, yaw)
+    echo ""
+    print_info "Starting orientation for Robot $robot_num (in radians):"
+    ROBOT_ROLLS[$index]=$(get_float_input "Roll (rotation around X-axis)")
+    ROBOT_PITCHES[$index]=$(get_float_input "Pitch (rotation around Y-axis)")
+    ROBOT_YAWS[$index]=$(get_float_input "Yaw (rotation around Z-axis)")
+    
+    # Get starting joint values
+    echo ""
+    print_info "Starting joint values for Robot $robot_num (in radians):"
+    ROBOT_SHOULDER_PANS[$index]=$(get_float_input "Shoulder Pan Joint")
+    ROBOT_SHOULDER_LIFTS[$index]=$(get_float_input "Shoulder Lift Joint")
+    ROBOT_ELBOWS[$index]=$(get_float_input "Elbow Joint")
+    ROBOT_WRIST_1S[$index]=$(get_float_input "Wrist 1 Joint")
+    ROBOT_WRIST_2S[$index]=$(get_float_input "Wrist 2 Joint")
+    ROBOT_WRIST_3S[$index]=$(get_float_input "Wrist 3 Joint")
+    
+    print_success "Robot $robot_num configuration completed!"
+}
+
+# Function to display configuration summary
+display_summary() {
+    local num_robots=$1
+    
+    echo ""
+    print_info "Configuration Summary:"
+    echo "====================="
+    echo "Number of robots: $num_robots"
+    echo ""
+    
+    for ((i=1; i<=num_robots; i++)); do
+        local index=$((i-1))
+        echo "Robot $i:"
+        echo "  UR Type: ${ROBOT_UR_TYPES[$index]}"
+        echo "  Position: x=${ROBOT_X_POSITIONS[$index]}, y=${ROBOT_Y_POSITIONS[$index]}, z=${ROBOT_Z_POSITIONS[$index]}"
+        echo "  Orientation: roll=${ROBOT_ROLLS[$index]}, pitch=${ROBOT_PITCHES[$index]}, yaw=${ROBOT_YAWS[$index]}"
+        echo "  Joint Values:"
+        echo "    Shoulder Pan: ${ROBOT_SHOULDER_PANS[$index]}"
+        echo "    Shoulder Lift: ${ROBOT_SHOULDER_LIFTS[$index]}"
+        echo "    Elbow: ${ROBOT_ELBOWS[$index]}"
+        echo "    Wrist 1: ${ROBOT_WRIST_1S[$index]}"
+        echo "    Wrist 2: ${ROBOT_WRIST_2S[$index]}"
+        echo "    Wrist 3: ${ROBOT_WRIST_3S[$index]}"
+        echo ""
+    done
+}
+
+# Function to generate XACRO file
+generate_xacro_file() {
+  local num_robots=$1
+  local package_name=$2
+  local pkg_dir=$3
+    
+  local xacro_file="${pkg_dir}/urdf/${package_name}.urdf.xacro"
+    
+    print_info "Generating XACRO file: $xacro_file"
+    
+    # Create XACRO header
+    cat > "$xacro_file" << 'EOF'
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="multi_arm">
+  <!-- declare arguments -->
+EOF
+
+    # Add arguments for each robot
+    for ((i=1; i<=num_robots; i++)); do
+        local index=$((i-1))
+        cat >> "$xacro_file" << EOF
+  <xacro:arg name="robot${i}_ur_type" default="${ROBOT_UR_TYPES[$index]}"/>
+  <xacro:arg name="robot${i}_x" default="${ROBOT_X_POSITIONS[$index]}"/>
+  <xacro:arg name="robot${i}_y" default="${ROBOT_Y_POSITIONS[$index]}"/>
+  <xacro:arg name="robot${i}_z" default="${ROBOT_Z_POSITIONS[$index]}"/>
+  <xacro:arg name="robot${i}_yaw" default="${ROBOT_YAWS[$index]}"/>
+EOF
+    done
+
+    # Add world link and include ur_macro
+    cat >> "$xacro_file" << 'EOF'
+
+  <!-- world reference frame -->
+  <link name="world"/>
+
+  <!-- include the core URDF macro definitions -->
+  <xacro:include filename="$(find multi_ur_description)/urdf/ur_macro.xacro"/>
+
+  <!-- Unified ros2_control for all arms -->
+  <ros2_control name="multi_arm_controller_manager" type="system">
+    <hardware>
+      <plugin>ign_ros2_control/IgnitionSystem</plugin>
+    </hardware>
+EOF
+
+    # Add ros2_control joints for each robot
+    for ((i=1; i<=num_robots; i++)); do
+        local index=$((i-1))
+        cat >> "$xacro_file" << EOF
+    <!-- Robot $i joints -->
+    <joint name="robot${i}_shoulder_pan_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">${ROBOT_SHOULDER_PANS[$index]}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="robot${i}_shoulder_lift_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">${ROBOT_SHOULDER_LIFTS[$index]}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="robot${i}_elbow_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">${ROBOT_ELBOWS[$index]}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="robot${i}_wrist_1_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">${ROBOT_WRIST_1S[$index]}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="robot${i}_wrist_2_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">${ROBOT_WRIST_2S[$index]}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="robot${i}_wrist_3_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position">
+        <param name="initial_value">${ROBOT_WRIST_3S[$index]}</param>
+      </state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+EOF
+    done
+
+    # Close ros2_control section
+    cat >> "$xacro_file" << 'EOF'
+  </ros2_control>
+
+EOF
+
+    # Add robot instances
+    for ((i=1; i<=num_robots; i++)); do
+        cat >> "$xacro_file" << EOF
+  <!-- Robot $i instance -->
+  <xacro:ur_robot
+    name="robot$i"
+    tf_prefix="robot${i}_"
+    parent="world"
+    joint_limits_parameters_file="\$(find multi_ur_description)/config/\$(arg robot${i}_ur_type)/joint_limits.yaml"
+    kinematics_parameters_file="\$(find multi_ur_description)/config/\$(arg robot${i}_ur_type)/default_kinematics.yaml"
+    physical_parameters_file="\$(find multi_ur_description)/config/\$(arg robot${i}_ur_type)/physical_parameters.yaml"
+    visual_parameters_file="\$(find multi_ur_description)/config/\$(arg robot${i}_ur_type)/visual_parameters.yaml"
+    generate_ros2_control_tag="false"
+    sim_gazebo="false"
+    sim_ignition="true">
+    <origin xyz="\$(arg robot${i}_x) \$(arg robot${i}_y) \$(arg robot${i}_z)" rpy="0 0 \$(arg robot${i}_yaw)"/>
+  </xacro:ur_robot>
+
+EOF
+    done
+
+    # Add gazebo plugin
+    cat >> "$xacro_file" << EOF
+  <gazebo>
+    <plugin filename="libign_ros2_control-system.so" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+      <parameters>$(find ${package_name})/config/controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>
+EOF
+
+    print_success "XACRO file generated successfully!"
+}
+
+# Function to render XACRO from helpers template (supports 2 robots)
+render_template_xacro() {
+  local num_robots=$1
+  local package_name=$2
+  local pkg_dir=$3
+
+  local template_file="${SCRIPT_DIR}/helpers/robot_description_template.xacro"
+  local out_file="${pkg_dir}/urdf/${package_name}.urdf.xacro"
+
+  if [ ! -f "$template_file" ]; then
+    print_warning "Template not found at $template_file. Falling back to generated XACRO."
+    generate_xacro_file "$num_robots" "$package_name" "$pkg_dir"
+    return
+  fi
+
+  print_info "Rendering template XACRO from: $template_file"
+  cp "$template_file" "$out_file"
+
+  # Gather robot parameters (supports exactly 2 robots of the same type)
+  local x1="${ROBOT_X_POSITIONS[0]}"; local y1="${ROBOT_Y_POSITIONS[0]}"; local z1="${ROBOT_Z_POSITIONS[0]}"; local yaw1="${ROBOT_YAWS[0]}"
+  local x2="${ROBOT_X_POSITIONS[1]}"; local y2="${ROBOT_Y_POSITIONS[1]}"; local z2="${ROBOT_Z_POSITIONS[1]}"; local yaw2="${ROBOT_YAWS[1]}"
+  local type1="${ROBOT_UR_TYPES[0]}"; local type2="${ROBOT_UR_TYPES[1]}"
+
+  if [ "$num_robots" -ne 2 ] || [ "$type1" != "$type2" ]; then
+    print_warning "Template supports exactly 2 robots of the same type. Falling back to generated XACRO."
+    generate_xacro_file "$num_robots" "$package_name" "$pkg_dir"
+    return
+  fi
+
+  # Fix top-level robot name typo if present
+  sed -i -E 's/name="mutli_arm"/name="multi_arm"/' "$out_file"
+
+  # Update joint names to match robot1_/robot2_ convention
+  sed -i -E 's/arm1shoulder_pan_joint/robot1_shoulder_pan_joint/g' "$out_file"
+  sed -i -E 's/arm1shoulder_lift_joint/robot1_shoulder_lift_joint/g' "$out_file"
+  sed -i -E 's/arm1elbow_joint/robot1_elbow_joint/g' "$out_file"
+  sed -i -E 's/arm1wrist_1_joint/robot1_wrist_1_joint/g' "$out_file"
+  sed -i -E 's/arm1wrist_2_joint/robot1_wrist_2_joint/g' "$out_file"
+  sed -i -E 's/arm1wrist_3_joint/robot1_wrist_3_joint/g' "$out_file"
+  sed -i -E 's/arm2_/robot2_/g' "$out_file"
+
+  # Update ur_robot names and tf_prefixes
+  sed -i -E '0,/<xacro:ur_robot/s/name="arm1"/name="robot1"/' "$out_file"
+  sed -i -E '0,/<xacro:ur_robot/s/tf_prefix="arm1"/tf_prefix="robot1_"/' "$out_file"
+  # Change the remaining occurrence of name="arm1" to robot2
+  sed -i -E 's/(<xacro:ur_robot[^>]*name=")arm1"/\1robot2"/' "$out_file"
+  sed -i -E 's/tf_prefix="arm2_"/tf_prefix="robot2_"/' "$out_file"
+
+  # Replace origins for both robots with provided positions and yaw
+  sed -i -E "0,/<origin xyz=\"0 0 \$\(arg z\)\" rpy=\"0 0 \$\(arg Y\)\"\/>/s//<origin xyz=\"${x1} ${y1} ${z1}\" rpy=\"0 0 ${yaw1}\"\/>/" "$out_file"
+  sed -i -E "s|<origin xyz=\"0.2 0.2 \$\(arg z\)\" rpy=\"0 0 \$\(arg Y\)\"/>|<origin xyz=\"${x2} ${y2} ${z2}\" rpy=\"0 0 ${yaw2}\"/>|" "$out_file"
+
+  # Set default UR type arg to the selected type
+  sed -i -E "s|(<xacro:arg name=\"ur_type\"\s+default=\")[^\"]+(\"/?>)|\1${type1}\2|" "$out_file"
+
+  # Update Gazebo controllers path to point at this package's controllers.yaml
+  sed -i -E "s|\$\(find two_arm_moveit_config\)/config/multi_arm_controllers.yaml|\$\(find ${package_name}\)/config/controllers.yaml|" "$out_file"
+
+  print_success "Template XACRO rendered: $out_file"
+}
+
+# Expand a XACRO file into a URDF file
+expand_xacro_to_urdf() {
+  local xacro_file=$1
+  local urdf_file=$2
+  print_info "Generating URDF from XACRO: $(basename "$xacro_file")"
+  if command -v xacro >/dev/null 2>&1; then
+    xacro "$xacro_file" -o "$urdf_file"
+  elif command -v ros2 >/dev/null 2>&1; then
+    ros2 run xacro xacro "$xacro_file" -o "$urdf_file"
+  else
+    if python3 - << 'PY'
+import sys
+try:
+    import xacro  # noqa: F401
+except Exception:
+    sys.exit(1)
+PY
+    then
+      python3 -m xacro "$xacro_file" -o "$urdf_file"
+    else
+      print_error "Could not find xacro CLI. Please ensure the ROS xacro package is installed."
+      return 1
+    fi
+  fi
+  print_success "URDF generated: $urdf_file"
+}
+# Main function
+main() {
+    echo "======================================"
+    print_info "ROS Multi-Robot Package Creator"
+    echo "======================================"
+    echo ""
+    
+    # Get package name
+    echo -n "Enter package name: "
+    read package_name
+    
+    if [ -z "$package_name" ]; then
+        print_error "Package name cannot be empty"
+        exit 1
+    fi
+    
+    print_info "Package name set to: $package_name"
+    
+    # Get number of robots
+    local num_robots
+    num_robots=$(get_number_input "Enter number of robots" 1 10)
+    
+    print_info "Number of robots: $num_robots"
+    
+    # Get configuration for each robot
+    for ((i=1; i<=num_robots; i++)); do
+        echo ""
+        echo "======================================"
+        get_robot_config "$i"
+    done
+    
+    # Display summary
+    display_summary "$num_robots"
+    
+    # Confirm generation
+    echo -n "Generate ROS package with this configuration? (y/N): "
+    read confirm
+    
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        print_warning "Package generation cancelled"
+        exit 0
+    fi
+    
+    # Create package structure
+  print_info "Creating package structure under src..."
+    
+  # Ensure src directory exists
+  mkdir -p "${SRC_DIR}"
+    
+  # Define package directory inside src
+  local PKG_DIR="${SRC_DIR}/${package_name}"
+    
+  # Create directories
+  mkdir -p "${PKG_DIR}/urdf"
+  mkdir -p "${PKG_DIR}/config"
+  mkdir -p "${PKG_DIR}/launch"
+  mkdir -p "${PKG_DIR}/rviz"
+    
+  # Generate XACRO file (use template when exactly 2 robots)
+  if [ "$num_robots" -eq 2 ]; then
+    render_template_xacro "$num_robots" "$package_name" "$PKG_DIR"
+  else
+    generate_xacro_file "$num_robots" "$package_name" "$PKG_DIR"
+  fi
+
+  # Expand the generated XACRO into a URDF next to it
+  local XACRO_PATH="${PKG_DIR}/urdf/${package_name}.urdf.xacro"
+  local URDF_PATH="${PKG_DIR}/urdf/${package_name}.urdf"
+  if [ -f "$XACRO_PATH" ]; then
+    expand_xacro_to_urdf "$XACRO_PATH" "$URDF_PATH"
+  else
+    print_error "Expected XACRO not found at $XACRO_PATH"
+    exit 1
+  fi
+    
+    # Create package.xml
+  cat > "${PKG_DIR}/package.xml" << EOF
+<?xml version="1.0"?>
+<package format="3">
+  <name>${package_name}</name>
+  <version>0.0.1</version>
+  <description>Multi-robot description package for ${package_name}</description>
+  <maintainer email="user@example.com">User</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  
+  <depend>urdf</depend>
+  <depend>xacro</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>joint_state_publisher</depend>
+  <depend>multi_ur_description</depend>
+  
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
+EOF
+
+    # Create CMakeLists.txt
+  cat > "${PKG_DIR}/CMakeLists.txt" << EOF
+cmake_minimum_required(VERSION 3.8)
+project(${package_name})
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# find dependencies
+find_package(ament_cmake REQUIRED)
+
+# Install directories
+install(
+  DIRECTORY config launch rviz urdf
+  DESTINATION share/\${PROJECT_NAME}
+)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+ament_package()
+EOF
+
+    # Create basic controllers.yaml
+  cat > "${PKG_DIR}/config/controllers.yaml" << EOF
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+EOF
+
+    # Add controller configurations for each robot
+    for ((i=1; i<=num_robots; i++)); do
+  cat >> "${PKG_DIR}/config/controllers.yaml" << EOF
+    robot${i}_joint_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+robot${i}_joint_trajectory_controller:
+  ros__parameters:
+    joints:
+      - robot${i}_shoulder_pan_joint
+      - robot${i}_shoulder_lift_joint
+      - robot${i}_elbow_joint
+      - robot${i}_wrist_1_joint
+      - robot${i}_wrist_2_joint
+      - robot${i}_wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+
+EOF
+    done
+
+  print_success "Package '${package_name}' created successfully at: ${PKG_DIR}"
+    echo ""
+    print_info "To build and test:"
+    echo "1. cd to your workspace root"
+    echo "2. colcon build --packages-select ${package_name}"
+    echo "3. source install/setup.bash"
+    echo "4. ros2 launch ${package_name} display.launch.py"
+    echo ""
+    print_success "Done!"
+}
+
+# Run main function
+main "$@"
