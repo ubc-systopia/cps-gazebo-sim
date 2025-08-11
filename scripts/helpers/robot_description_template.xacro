@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<robot xmlns:xacro="http://wiki.ros.org/xacro" name="mutli_arm">
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="multi_arm">
   <!-- declare arguments -->
   <xacro:arg name="name"        default="arm1"/>
   <xacro:arg name="x"           default="-2.0"/>
@@ -80,7 +80,7 @@
       <state_interface name="effort"/>
     </joint>
     <!-- ARM 2 joints -->
-    <joint name="arm2_shoulder_pan_joint">
+  <joint name="arm2_shoulder_pan_joint">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -90,7 +90,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="arm2_shoulder_lift_joint">
+  <joint name="arm2_shoulder_lift_joint">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -100,7 +100,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="arm2_elbow_joint">
+  <joint name="arm2_elbow_joint">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -110,7 +110,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="arm2_wrist_1_joint">
+  <joint name="arm2_wrist_1_joint">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -120,7 +120,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="arm2_wrist_2_joint">
+  <joint name="arm2_wrist_2_joint">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -130,7 +130,7 @@
       <state_interface name="velocity"/>
       <state_interface name="effort"/>
     </joint>
-    <joint name="arm2_wrist_3_joint">
+  <joint name="arm2_wrist_3_joint">
       <command_interface name="position"/>
       <command_interface name="velocity"/>
       <state_interface name="position">
@@ -159,7 +159,7 @@
 
   <!-- instantiate the second UR robot kinematic chain WITHOUT ros2_control -->
   <xacro:ur_robot
-    name="arm1"
+    name="arm2"
     tf_prefix="arm2_"
     parent="world"
     joint_limits_parameters_file="$(find multi_ur_description)/config/$(arg ur_type)/joint_limits.yaml"
