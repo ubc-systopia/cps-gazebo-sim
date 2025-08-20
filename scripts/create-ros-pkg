@@ -486,14 +486,41 @@ main() {
   mkdir -p "${PKG_DIR}/urdf"
   mkdir -p "${PKG_DIR}/config"
   mkdir -p "${PKG_DIR}/launch"
-  mkdir -p "${PKG_DIR}/rviz"
+    # Prepare robot names and specs
+    robot_names=()
+    robot_specs=()
+    initial_positions=()
+    for ((i=1; i<=num_robots; i++)); do
+      robot_names+=("robot${i}")
+      robot_specs+=("robot${i}:${ROBOT_UR_TYPES[$((i-1))]}:${ROBOT_X_POSITIONS[$((i-1))]}:${ROBOT_Y_POSITIONS[$((i-1))]}:${ROBOT_Z_POSITIONS[$((i-1))]}:${ROBOT_ROLLS[$((i-1))]}:${ROBOT_PITCHES[$((i-1))]}:${ROBOT_YAWS[$((i-1))]}:${ROBOT_SHOULDER_PANS[$((i-1))]}:${ROBOT_SHOULDER_LIFTS[$((i-1))]}:${ROBOT_ELBOWS[$((i-1))]}:${ROBOT_WRIST_1S[$((i-1))]}:${ROBOT_WRIST_2S[$((i-1))]}:${ROBOT_WRIST_3S[$((i-1))]}")
+      initial_positions+=("robot${i}:${ROBOT_SHOULDER_PANS[$((i-1))]},${ROBOT_SHOULDER_LIFTS[$((i-1))]},${ROBOT_ELBOWS[$((i-1))]},${ROBOT_WRIST_1S[$((i-1))]},${ROBOT_WRIST_2S[$((i-1))]},${ROBOT_WRIST_3S[$((i-1))]}")
+    done
+
+    # Generate all files using helper scripts
+    bash "${SCRIPT_DIR}/helpers/generate_cmakelists.sh" "$package_name" "$PKG_DIR"
+    bash "${SCRIPT_DIR}/helpers/generate_package_xml.sh" "$package_name" "$PKG_DIR"
+    bash "${SCRIPT_DIR}/helpers/generate_demo_launch.sh" "$package_name" "$PKG_DIR"
+    bash "${SCRIPT_DIR}/helpers/generate_robots_json.sh" "$package_name" "$PKG_DIR" "${robot_specs[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_joint_limits.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_kinematics.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_initial_positions.sh" "$package_name" "$PKG_DIR" "${initial_positions[@]}"
+    controller_args=()
+    for ((i=1; i<=num_robots; i++)); do
+      joints="robot${i}_shoulder_pan_joint,robot${i}_shoulder_lift_joint,robot${i}_elbow_joint,robot${i}_wrist_1_joint,robot${i}_wrist_2_joint,robot${i}_wrist_3_joint"
+      controller_args+=("robot${i}_joint_trajectory_controller:$joints")
+    done
+    bash "${SCRIPT_DIR}/helpers/generate_controllers.sh" "$package_name" "$PKG_DIR" "${controller_args[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_moveit_controllers.sh" "$package_name" "$PKG_DIR" "${controller_args[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_srdf.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_rviz_config.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_sensors_3d.sh" "$package_name" "$PKG_DIR"
+    bash "${SCRIPT_DIR}/helpers/generate_pilz_cartesian_limits.sh" "$package_name" "$PKG_DIR"
+    bash "${SCRIPT_DIR}/helpers/generate_pkg_xacro.sh" "$package_name" "$PKG_DIR" "${robot_specs[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_robot_description_template.sh" "$package_name" "$PKG_DIR" "${robot_specs[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_robot_description_wrapper.sh" "$package_name" "$PKG_DIR"
+    bash "${SCRIPT_DIR}/helpers/generate_ros2_control_xacro.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_static_robot_description.sh" "$package_name" "$PKG_DIR"
     
-  # Generate XACRO file (use template when exactly 2 robots)
-  if [ "$num_robots" -eq 2 ]; then
-    render_template_xacro "$num_robots" "$package_name" "$PKG_DIR"
-  else
-    generate_xacro_file "$num_robots" "$package_name" "$PKG_DIR"
-  fi
 
   # Expand the generated XACRO into a URDF next to it
   local XACRO_PATH="${PKG_DIR}/urdf/${package_name}.urdf.xacro"
@@ -546,7 +573,7 @@ find_package(ament_cmake REQUIRED)
 
 # Install directories
 install(
-  DIRECTORY config launch rviz urdf
+  DIRECTORY config launch urdf
   DESTINATION share/\${PROJECT_NAME}
 )
 
@@ -558,40 +585,21 @@ endif()
 ament_package()
 EOF
 
-    # Create basic controllers.yaml
-  cat > "${PKG_DIR}/config/controllers.yaml" << EOF
-controller_manager:
-  ros__parameters:
-    update_rate: 100
-    
-    joint_state_broadcaster:
-      type: joint_state_broadcaster/JointStateBroadcaster
 
-EOF
-
-    # Add controller configurations for each robot
+    # Generate controllers.yaml using helper script
+    controller_args=()
     for ((i=1; i<=num_robots; i++)); do
-  cat >> "${PKG_DIR}/config/controllers.yaml" << EOF
-    robot${i}_joint_trajectory_controller:
-      type: joint_trajectory_controller/JointTrajectoryController
-
-robot${i}_joint_trajectory_controller:
-  ros__parameters:
-    joints:
-      - robot${i}_shoulder_pan_joint
-      - robot${i}_shoulder_lift_joint
-      - robot${i}_elbow_joint
-      - robot${i}_wrist_1_joint
-      - robot${i}_wrist_2_joint
-      - robot${i}_wrist_3_joint
-    command_interfaces:
-      - position
-    state_interfaces:
-      - position
-      - velocity
-
-EOF
+      joints="robot${i}_shoulder_pan_joint,robot${i}_shoulder_lift_joint,robot${i}_elbow_joint,robot${i}_wrist_1_joint,robot${i}_wrist_2_joint,robot${i}_wrist_3_joint"
+      controller_args+=("robot${i}_joint_trajectory_controller:$joints")
     done
+    bash "${SCRIPT_DIR}/helpers/generate_controllers.sh" "$package_name" "$PKG_DIR" "${controller_args[@]}"
+
+    # Generate RViz config using helper script
+    robot_names=()
+    for ((i=1; i<=num_robots; i++)); do
+      robot_names+=("robot${i}")
+    done
+    bash "${SCRIPT_DIR}/helpers/generate_rviz_config.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
 
   print_success "Package '${package_name}' created successfully at: ${PKG_DIR}"
     echo ""
