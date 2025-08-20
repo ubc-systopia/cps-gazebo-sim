@@ -1,0 +1,18 @@
+robot1:
+  planner_configs:
+    - RRTConnect
+    - PRM
+  default_planner_config: RRTConnect
+
+ompl:
+  planning_plugin: ompl_interface/OMPLPlanner
+  request_adapters: default_planner_request_adapters/AddTimeParameterization
+  default_planner_config: RRTConnect
+
+planner_configs:
+  RRTConnect:
+    type: geometric::RRTConnect
+    range: 0.0
+  PRM:
+    type: geometric::PRM
+    range: 0.0

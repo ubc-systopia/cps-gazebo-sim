@@ -1,0 +1,65 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Enabled: true
+      Name: Grid
+      Plane: XY
+      Plane Cell Count: 10
+      Cell Size: 1
+    - Class: moveit_rviz_plugin/MotionPlanning
+      Enabled: true
+      Name: MotionPlanning
+      Move Group Namespace: ""
+      Planning Scene Topic: /monitored_planning_scene
+      Robot Description: robot_description
+      Planning Request:
+        Planning Group: robot1
+        Query Goal State: true
+        Query Start State: false
+      Scene Robot:
+        Show Robot Visual: true
+        Show Robot Collision: false
+      Planned Path:
+        Trajectory Topic: /display_planned_path
+        Loop Animation: false
+        State Display Time: 0.05 s
+    - Class: rviz_default_plugins/RobotModel
+      Enabled: true
+      Name: RobotModel
+      Robot Description: robot_description
+      Visual Enabled: true
+      Collision Enabled: false
+  Enabled: true
+  Global Options:
+    Background Color: 48; 48; 48
+    Fixed Frame: world
+    Frame Rate: 30
+  Tools:
+    - Class: rviz_default_plugins/Interact
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+  Name: root
+Views:
+  Current:
+    Class: rviz_default_plugins/Orbit
+    Distance: 5
+    Focal Point:
+      X: 0.0
+      Y: 0.0
+      Z: 0.0
+    Name: Current View
+    Pitch: 0.5
+    Target Frame: world
+    Yaw: 0.5
+Window Geometry:
+  Height: 800
+  Width: 1200
+  X: 100
+  Y: 100
+  QMainWindow State: 000000ff00000000fd0000000100000000000002b400000375fc0200000001fb000000100044006900730070006c006100790073010000003d00000123000000c900ffffff000001f60000037500000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000

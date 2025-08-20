@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="multi_arm">
+  <!-- declare arguments -->
+  <xacro:arg name="robot1_ur_type" default="ur3e"/>
+  <xacro:arg name="robot1_x" default="0"/>
+  <xacro:arg name="robot1_y" default="0"/>
+  <xacro:arg name="robot1_z" default="0"/>
+  <xacro:arg name="robot1_R" default="0"/>
+  <xacro:arg name="robot1_P" default="0"/>
+  <xacro:arg name="robot1_Y" default="0"/>
+
+  <!-- world reference frame -->
+  <link name="world"/>
+
+  <!-- include the core URDF macro definitions -->
+  <xacro:include filename="$(find multi_ur_description)/urdf/ur_macro.xacro"/>
+
+  <!-- Unified ros2_control for all arms (Ignition simulation) -->
+  <ros2_control name="multi_arm_controller_manager" type="system">
+    <hardware>
+      <plugin>ign_ros2_control/IgnitionSystem</plugin>
+    </hardware>
+    <!-- robot1 joints -->
+    <joint name="robot1_shoulder_pan_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="robot1_shoulder_lift_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="robot1_elbow_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="robot1_wrist_1_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="robot1_wrist_2_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+    <joint name="robot1_wrist_3_joint">
+      <command_interface name="position"/>
+      <state_interface name="position"><param name="initial_value">0</param></state_interface>
+      <state_interface name="velocity"/>
+    </joint>
+  </ros2_control>
+
+  <!-- robot1 kinematic chain WITHOUT internal ros2_control -->
+  <xacro:ur_robot
+    name="robot1"
+    tf_prefix="robot1_"
+    parent="world"
+    joint_limits_parameters_file="$(find multi_ur_description)/config/$(arg robot1_ur_type)/joint_limits.yaml"
+    kinematics_parameters_file="$(find multi_ur_description)/config/$(arg robot1_ur_type)/default_kinematics.yaml"
+    physical_parameters_file="$(find multi_ur_description)/config/$(arg robot1_ur_type)/physical_parameters.yaml"
+    visual_parameters_file="$(find multi_ur_description)/config/$(arg robot1_ur_type)/visual_parameters.yaml"
+    generate_ros2_control_tag="false"
+    sim_gazebo="false"
+    sim_ignition="true">
+    <origin xyz="$(arg robot1_x) $(arg robot1_y) $(arg robot1_z)" rpy="$(arg robot1_R) $(arg robot1_P) $(arg robot1_Y)"/>
+  </xacro:ur_robot>
+
+  <gazebo>
+    <plugin filename="libign_ros2_control-system.so" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+      <parameters>$(find test_single)/config/controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>

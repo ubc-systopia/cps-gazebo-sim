@@ -1,0 +1,24 @@
+{
+  "robot_arms": [
+    {
+      "key": "robot1",
+      "model": "ur3e",
+      "base_coordinates": {
+        "x": "0",
+        "y": "0",
+        "z": "0",
+        "R": "0",
+        "P": "0",
+        "Y": "0"
+      },
+      "initial_joints": {
+        "shoulder_pan": "0",
+        "shoulder_lift": "0",
+        "elbow": "0",
+        "wrist_1": "0",
+        "wrist_2": "0",
+        "wrist_3": "0"
+      }
+    }
+  ]
+}
