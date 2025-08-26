@@ -62,6 +62,21 @@ OUT_FILE="${PKG_DIR}/config/${PACKAGE_NAME}.srdf"
     done
   fi
 
+  # Disable collisions between each robot's arm links and every other robot's base link
+  for robot_a in "$@"; do
+    for robot_b in "$@"; do
+      if [ "$robot_a" != "$robot_b" ]; then
+        echo "    <!-- Disable collisions between ${robot_a} arm links and ${robot_b} base link -->"
+        echo "    <disable_collisions link1=\"${robot_a}_shoulder_link\" link2=\"${robot_b}_base_link_inertia\" reason=\"Never\"/>"
+        echo "    <disable_collisions link1=\"${robot_a}_upper_arm_link\" link2=\"${robot_b}_base_link_inertia\" reason=\"Never\"/>"
+        echo "    <disable_collisions link1=\"${robot_a}_forearm_link\" link2=\"${robot_b}_base_link_inertia\" reason=\"Never\"/>"
+        echo "    <disable_collisions link1=\"${robot_a}_wrist_1_link\" link2=\"${robot_b}_base_link_inertia\" reason=\"Never\"/>"
+        echo "    <disable_collisions link1=\"${robot_a}_wrist_2_link\" link2=\"${robot_b}_base_link_inertia\" reason=\"Never\"/>"
+        echo "    <disable_collisions link1=\"${robot_a}_wrist_3_link\" link2=\"${robot_b}_base_link_inertia\" reason=\"Never\"/>"
+      fi
+    done
+  done
+
   echo ""
   echo "</robot>"
 } > "$OUT_FILE"

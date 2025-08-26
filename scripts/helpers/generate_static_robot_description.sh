@@ -24,9 +24,9 @@ status=0
 
 # Try xacro CLI first, then ros2, then python -m xacro
 if command -v xacro >/dev/null 2>&1; then
-  xacro "${SRC_XACRO}" -o "${OUT_URDF}" || status=$?
+  xacro "${SRC_XACRO}" -o "${OUT_URDF}" 2>/dev/null || status=$?
 elif command -v ros2 >/dev/null 2>&1; then
-  ros2 run xacro xacro "${SRC_XACRO}" -o "${OUT_URDF}" || status=$?
+  ros2 run xacro xacro "${SRC_XACRO}" -o "${OUT_URDF}" 2>/dev/null || status=$?
 else
   if python3 - << 'PY'
 import sys
@@ -36,7 +36,7 @@ except Exception:
     sys.exit(1)
 PY
   then
-    python3 -m xacro "${SRC_XACRO}" -o "${OUT_URDF}" || status=$?
+  python3 -m xacro "${SRC_XACRO}" -o "${OUT_URDF}" 2>/dev/null || status=$?
   else
     echo "[ERROR] Could not find xacro CLI. Please ensure the ROS xacro package is installed." >&2
     status=127
