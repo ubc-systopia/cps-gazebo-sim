@@ -19,7 +19,7 @@ fi
 # Begin file header
 {
   echo "<?xml version=\"1.0\"?>"
-  echo "<robot xmlns:xacro=\"http://wiki.ros.org/xacro\" name=\"multi_arm\">"
+  echo "<robot xmlns:xacro=\"http://wiki.ros.org/xacro\" name=\"${PACKAGE_NAME}\">"
   echo "  <!-- declare per-robot arguments (defaults set from user inputs) -->"
 } > "$OUT_FILE"
 

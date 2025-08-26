@@ -408,11 +408,11 @@ render_template_xacro() {
 expand_xacro_to_urdf() {
   local xacro_file=$1
   local urdf_file=$2
-  print_info "Generating URDF from XACRO: $(basename "$xacro_file")"
+  print_info "Generating URDF from XACRO: $(basename \"$xacro_file\")"
   if command -v xacro >/dev/null 2>&1; then
-    xacro "$xacro_file" -o "$urdf_file"
+    xacro "$xacro_file" -o "$urdf_file" 2>/dev/null
   elif command -v ros2 >/dev/null 2>&1; then
-    ros2 run xacro xacro "$xacro_file" -o "$urdf_file"
+    ros2 run xacro xacro "$xacro_file" -o "$urdf_file" 2>/dev/null
   else
     if python3 - << 'PY'
 import sys
@@ -422,7 +422,7 @@ except Exception:
     sys.exit(1)
 PY
     then
-      python3 -m xacro "$xacro_file" -o "$urdf_file"
+      python3 -m xacro "$xacro_file" -o "$urdf_file" 2>/dev/null
     else
       print_error "Could not find xacro CLI. Please ensure the ROS xacro package is installed."
       return 1
