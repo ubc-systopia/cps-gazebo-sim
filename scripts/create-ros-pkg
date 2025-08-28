@@ -513,6 +513,9 @@ main() {
     bash "${SCRIPT_DIR}/helpers/generate_moveit_controllers.sh" "$package_name" "$PKG_DIR" "${controller_args[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_srdf.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_rviz_config.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
+
+  # Generate launch script for the new package
+  bash "${SCRIPT_DIR}/helpers/generate_launch_script.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_sensors_3d.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_pilz_cartesian_limits.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_pkg_xacro.sh" "$package_name" "$PKG_DIR" "${robot_specs[@]}"
