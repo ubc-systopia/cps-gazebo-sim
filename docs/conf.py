@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "CPS Multiple Robot Gazebo Sim"
-copyright = "2024, Iris Xu"
-author = "Iris Xu"
+copyright = "2025, Roman Sinkus, Iris Xu"
+author = "Roman Sinkus, Iris Xu"
 release = "dev"
 
 # -- General configuration ---------------------------------------------------
@@ -24,4 +24,8 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "alabaster"
+
 html_static_path = ["_static"]
+html_css_files = [
+	'custom.css',
+]

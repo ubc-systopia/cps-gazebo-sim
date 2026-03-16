@@ -11,6 +11,11 @@ CPS Multiple Robot Gazebo Sim documentation
    :caption: Contents:
    :glob:
 
+   guides/setup.md
+   guides/create_new_sim_env.md
+   guides/generated_ros_package_architecture.md
+   guides/ros_pkg_generattion_scripts_arch.md
+   guides/scripts.md
    quick_info/*
    guides/creating_models.md
    guides/loading_models.md
