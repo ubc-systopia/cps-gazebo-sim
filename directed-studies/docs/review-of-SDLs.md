@@ -1,3 +1,20 @@
+# Systopia Lab Testbed (CPS Group) - University of British Columbia
+* Link: https://systopia.cs.ubc.ca/
+* Research Area:
+  * Bug intervention, intrusion detection, and collision detection in SDLs
+* Robots + hardware:
+  * ViperX
+  * Ned2
+* Software:
+  * ROS 2 Humble + MoveIt 2 + Gazebo
+  * RABIT - Robot Arm Bug Intervention Tool for Self-Driving Labs
+* References:
+  * https://ieeexplore.ieee.org/abstract/document/9833708
+  * https://ieeexplore.ieee.org/abstract/document/10646958
+* Repos:
+  * https://github.com/ubc-systopia/cps-gazebo-sim
+  * https://github.com/ubc-systopia/dsn-2024-rabit-artifact
+
 # Hein Lab - University of British Columbia
 
 * Link: https://groups2.chem.ubc.ca/jheints1/
@@ -22,7 +39,7 @@
 * Robots + hardware:
   * North Robotics - N9
   * North Robotics - C9 controller
-  * Universal Robots - UR5e
+  * Universal Robots - UR5e + UR3
 * Software:
   * *Not using ROS*
   * ChemOS, AlabOS, Ares OS
