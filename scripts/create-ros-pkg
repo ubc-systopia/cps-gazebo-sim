@@ -516,6 +516,8 @@ main() {
 
   # Generate launch script for the new package
   bash "${SCRIPT_DIR}/helpers/generate_launch_script.sh" "$package_name" "$PKG_DIR"
+    # Thin demo workflow that drives this package via the multi_arm_control library
+    bash "${SCRIPT_DIR}/helpers/generate_workflow_demo.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_sensors_3d.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_pilz_cartesian_limits.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_pkg_xacro.sh" "$package_name" "$PKG_DIR" "${robot_specs[@]}"
@@ -552,7 +554,8 @@ main() {
   <depend>robot_state_publisher</depend>
   <depend>joint_state_publisher</depend>
   <depend>multi_ur_description</depend>
-  
+  <exec_depend>multi_arm_control</exec_depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

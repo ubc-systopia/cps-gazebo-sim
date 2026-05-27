@@ -27,6 +27,17 @@ OUT_FILE="${PKG_DIR}/config/${PACKAGE_NAME}.srdf"
     echo "    </group>"
   done
 
+  # Composite group: all arms together, for coordinated (collision-checked)
+  # simultaneous motion. Per-arm groups above remain the default working unit.
+  if [ "$#" -ge 2 ]; then
+    echo "    <!--COMPOSITE GROUP: all arms together, for coordinated simultaneous motion-->"
+    echo "    <group name=\"all_arms\">"
+    for robot in "$@"; do
+      echo "        <group name=\"${robot}\"/>"
+    done
+    echo "    </group>"
+  fi
+
   echo "    <!--DISABLE COLLISIONS: By default, any link pair may collide. The pairs below are disabled for proper operation. -->"
   # Per-robot self-collision disables (UR-style link set)
   for robot in "$@"; do
