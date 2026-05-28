@@ -1,6 +1,6 @@
 #!/bin/bash
 # Usage: generate_workflow_demo.sh <package_name> <pkg_dir>
-# Emits a thin demo workflow script that drives the package via the shared
+# Emits a thin demo/test workflow that drives the package via the shared
 # multi_arm_control library. All control logic lives in the library; this script
 # is just task choreography, and discovers the arms from the package's robots.json.
 
@@ -12,7 +12,7 @@ OUT_FILE="${PKG_DIR}/scripts/workflow_demo.py"
 
 cat > "$OUT_FILE" << PY
 #!/usr/bin/env python3
-"""Demo workflow for ${PACKAGE_NAME}, built on the shared multi_arm_control API.
+"""Demo / test workflow for ${PACKAGE_NAME}, built on the multi_arm_control API.
 
 Run WHILE the package is up (Gazebo + move_group):
 
@@ -20,8 +20,10 @@ Run WHILE the package is up (Gazebo + move_group):
     source install/setup.bash
     python3 src/${PACKAGE_NAME}/scripts/workflow_demo.py
 
-All control logic lives in the multi_arm_control library; this script is just the
-task choreography. ArmFleet discovers the arms from this package's robots.json.
+Runs labelled tests and prints a PASS/FAIL summary:
+  Part 1  smoke test       - bring all arms to home (is the pipeline alive?)
+  Part 2  joint positions  - simultaneous (coordinated) + sequential
+  Part 3  IK (Cartesian)   - sequential + simultaneous
 """
 
 import rclpy
@@ -30,24 +32,55 @@ from multi_arm_control import ArmFleet, HOME_JOINTS, UPRIGHT_JOINTS
 
 PACKAGE = "${PACKAGE_NAME}"
 
+# Modest base-frame Cartesian target [x, y, z, roll, pitch, yaw] (metres, rad),
+# kept small/high to stay reachable and clear of the floor. Tune per package
+# (use move_pose_cli.py) if an arm reports a planning failure.
+DEMO_POSE = [0.25, 0.0, 0.30, 0.0, 1.5708, 0.0]
+
 
 def main():
     rclpy.init()
     fleet = ArmFleet(PACKAGE)
+    names = fleet.arm_names
+    multi = len(names) >= 2
+    results = {}
     try:
-        names = fleet.arm_names
+        # Part 1: smoke test - bring every arm to a known home.
+        results["1. smoke: home all arms"] = all(
+            [fleet.move_joints(n, HOME_JOINTS) for n in names])
 
-        # 1. All arms up together, then down together - one coordinated,
-        #    collision-checked motion (needs the all_arms SRDF group).
-        if len(names) >= 2:
-            fleet.move_coordinated({n: UPRIGHT_JOINTS for n in names})
-            fleet.move_coordinated({n: HOME_JOINTS for n in names})
+        # Part 2a: simultaneous, coordinated (one collision-checked plan).
+        if multi:
+            up = fleet.move_coordinated({n: UPRIGHT_JOINTS for n in names})
+            down = fleet.move_coordinated({n: HOME_JOINTS for n in names})
+            results["2a. joints simultaneous (coordinated)"] = up and down
 
-        # 2. Then each arm on its own, in sequence: up then down.
+        # Part 2b: sequential - each arm up then down, one at a time.
+        seq = True
         for n in names:
-            fleet.arm(n).upright()
-            fleet.arm(n).home()
+            seq = fleet.move_joints(n, UPRIGHT_JOINTS) and seq
+            seq = fleet.move_joints(n, HOME_JOINTS) and seq
+        results["2b. joints sequential"] = seq
+
+        # Part 3a: sequential IK - each arm to a pose, then home.
+        seq_ik = True
+        for n in names:
+            seq_ik = fleet.move_pose(n, DEMO_POSE) and seq_ik
+            seq_ik = fleet.move_joints(n, HOME_JOINTS) and seq_ik
+        results["3a. IK sequential"] = seq_ik
+
+        # Part 3b: simultaneous IK - all arms to poses as ONE coordinated,
+        #          collision-checked motion (IK -> move_coordinated), then home.
+        if multi:
+            poses_ok = fleet.move_coordinated_poses({n: DEMO_POSE for n in names})
+            home_ok = fleet.move_coordinated({n: HOME_JOINTS for n in names})
+            results["3b. IK simultaneous (coordinated)"] = poses_ok and home_ok
     finally:
+        log = fleet.get_logger()
+        log.info("==================== demo results ====================")
+        for label, ok in results.items():
+            log.info(f"  [{'PASS' if ok else 'FAIL'}] {label}")
+        log.info("======================================================")
         fleet.destroy_node()
         rclpy.shutdown()
 

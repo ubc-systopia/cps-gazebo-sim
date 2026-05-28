@@ -42,6 +42,7 @@ cat > "$OUT_FILE" << EOF
   <exec_depend>moveit_setup_assistant</exec_depend>
   <exec_depend>multi_ur_description</exec_depend>
   <exec_depend>multi_arm_control</exec_depend>
+  <exec_depend>pick_ik</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>rviz2</exec_depend>
   <exec_depend>rviz_common</exec_depend>

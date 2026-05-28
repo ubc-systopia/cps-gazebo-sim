@@ -27,11 +27,20 @@ from moveit_msgs.msg import (
     OrientationConstraint,
     PositionConstraint,
 )
+from moveit_msgs.srv import GetPositionIK
 from geometry_msgs.msg import Pose
 from shape_msgs.msg import SolidPrimitive
 from control_msgs.action import FollowJointTrajectory
 
 from . import conventions as conv
+
+_ERROR_NAMES = {v: k for k, v in vars(MoveItErrorCodes).items()
+                if k.isupper() and isinstance(v, int)}
+
+
+def _err(code):
+    """Render a MoveItErrorCodes value as 'N (NAME)' for readable logs."""
+    return f"{code} ({_ERROR_NAMES.get(code, 'UNKNOWN')})"
 
 
 def rpy_to_quat(roll, pitch, yaw):
@@ -69,12 +78,9 @@ class Arm:
         self.base_frame = conv.base_frame(name)
 
     # --- core primitive --------------------------------------------------
-    def move_pose(self, pose, vel_scale=0.3, acc_scale=0.3):
-        """Move the end of the arm (tool0) to a 6-DOF pose in the arm's base frame.
-
-        pose = [x, y, z, roll, pitch, yaw]  (metres, radians).
-        Returns True on success, False on planning/execution failure.
-        """
+    def pose_constraints(self, pose):
+        """Build a Cartesian goal Constraints msg (position + orientation) for
+        this arm's tool0, expressed in its base frame. pose = [x,y,z,r,p,y]."""
         x, y, z, roll, pitch, yaw = pose
         qx, qy, qz, qw = rpy_to_quat(roll, pitch, yaw)
 
@@ -108,9 +114,16 @@ class Arm:
         constraints = Constraints()
         constraints.position_constraints = [pos_c]
         constraints.orientation_constraints = [ori_c]
+        return constraints
 
+    def move_pose(self, pose, vel_scale=0.3, acc_scale=0.3):
+        """Move the end of the arm (tool0) to a 6-DOF pose in the arm's base frame.
+
+        pose = [x, y, z, roll, pitch, yaw]  (metres, radians).
+        Returns True on success, False on planning/execution failure.
+        """
         return self.fleet._plan_and_execute(
-            self.group, constraints, vel_scale, acc_scale,
+            self.group, self.pose_constraints(pose), vel_scale, acc_scale,
             desc=f"{self.name} -> pose {pose}",
         )
 
@@ -162,6 +175,7 @@ class ArmFleet(Node):
         self._client = ActionClient(self, MoveGroup, action_name)
         self._arms = {}
         self._fjt = {}  # per-arm FollowJointTrajectory controller action clients
+        self._ik_client = None  # lazily-created /compute_ik service client
         self.get_logger().info(
             f"loaded {len(self.arm_names)} arm(s) from "
             f"{package_name}/config/robots.json: {self.arm_names}")
@@ -217,7 +231,7 @@ class ArmFleet(Node):
         if code == MoveItErrorCodes.SUCCESS:
             self.get_logger().info(f"[{desc}] SUCCESS")
             return True
-        self.get_logger().error(f"[{desc}] FAILED (MoveItErrorCode {code})")
+        self.get_logger().error(f"[{desc}] FAILED ({_err(code)})")
         return False
 
     # --- simultaneous multi-arm motion -----------------------------------
@@ -272,7 +286,7 @@ class ArmFleet(Node):
         result = result_future.result().result
         if result.error_code.val != MoveItErrorCodes.SUCCESS:
             self.get_logger().error(f"[move_all] planning {desc} FAILED "
-                                    f"(MoveItErrorCode {result.error_code.val})")
+                                    f"({_err(result.error_code.val)})")
             return None
         return result.planned_trajectory.joint_trajectory
 
@@ -309,6 +323,29 @@ class ArmFleet(Node):
                 ok = False
         return ok
 
+    def move_poses(self, targets, vel_scale=0.3, acc_scale=0.3):
+        """Move several arms to Cartesian poses at the SAME time (per-arm IK).
+
+        targets = {"robot1": [x,y,z,r,p,y], "robot2": [x,y,z,r,p,y], ...}
+
+        The Cartesian analogue of move_all: plans each arm's pose on its OWN
+        group (so IK runs per arm), then executes all trajectories in parallel
+        via each arm's controller. There is no combined-group IK, so this is the
+        way to send multiple arms to Cartesian targets simultaneously. Plans are
+        independent (frozen snapshot of the others) -> NOT collision-coordinated.
+        """
+        plans = {}
+        for name, pose in targets.items():
+            arm = self.arm(name)
+            traj = self._plan(arm.group, arm.pose_constraints(pose),
+                              vel_scale, acc_scale, desc=name)
+            if traj is None:
+                self.get_logger().error(f"[move_poses] planning failed for {name}; "
+                                        "aborting (no arm moved)")
+                return False
+            plans[name] = traj
+        return self._execute_all(plans)
+
     # --- coordinated multi-arm motion (collision-checked together) -------
     def move_coordinated(self, targets, group=conv.COMBINED_GROUP,
                          vel_scale=0.3, acc_scale=0.3):
@@ -328,3 +365,89 @@ class ArmFleet(Node):
                 self.arm(name).joint_constraints(positions).joint_constraints
         return self._plan_and_execute(group, combined, vel_scale, acc_scale,
                                       desc=group)
+
+    def compute_ik(self, arm_name, pose, timeout=2.0):
+        """Solve IK for one arm's tool0 pose via the /compute_ik service.
+
+        pose = [x, y, z, roll, pitch, yaw] in the arm's base frame.
+        Returns the 6 joint values (ordered per conventions) or None on failure.
+        """
+        arm = self.arm(arm_name)
+        if self._ik_client is None:
+            self._ik_client = self.create_client(GetPositionIK, "compute_ik")
+        if not self._ik_client.wait_for_service(timeout_sec=10.0):
+            self.get_logger().error("/compute_ik service not available")
+            return None
+
+        x, y, z, roll, pitch, yaw = pose
+        qx, qy, qz, qw = rpy_to_quat(roll, pitch, yaw)
+        req = GetPositionIK.Request()
+        ik = req.ik_request
+        ik.group_name = arm.group
+        ik.ik_link_name = arm.tip_link
+        ik.avoid_collisions = True
+        ik.timeout.sec = int(timeout)
+        ik.pose_stamped.header.frame_id = arm.base_frame
+        ik.pose_stamped.pose.position.x = float(x)
+        ik.pose_stamped.pose.position.y = float(y)
+        ik.pose_stamped.pose.position.z = float(z)
+        ik.pose_stamped.pose.orientation.x = qx
+        ik.pose_stamped.pose.orientation.y = qy
+        ik.pose_stamped.pose.orientation.z = qz
+        ik.pose_stamped.pose.orientation.w = qw
+
+        future = self._ik_client.call_async(req)
+        rclpy.spin_until_future_complete(self, future)
+        resp = future.result()
+        if resp is None:
+            self.get_logger().error(f"[compute_ik] {arm_name}: no response")
+            return None
+        if resp.error_code.val != MoveItErrorCodes.SUCCESS:
+            self.get_logger().error(
+                f"[compute_ik] {arm_name} IK FAILED ({_err(resp.error_code.val)})")
+            return None
+
+        name_to_pos = dict(zip(resp.solution.joint_state.name,
+                               resp.solution.joint_state.position))
+        try:
+            return [name_to_pos[j] for j in conv.joint_names(arm_name)]
+        except KeyError as missing:
+            self.get_logger().error(f"[compute_ik] {arm_name}: solution missing "
+                                    f"joint {missing}")
+            return None
+
+    def move_coordinated_poses(self, targets, vel_scale=0.3, acc_scale=0.3):
+        """Move several arms to Cartesian poses, simultaneously AND collision-
+        coordinated. targets = {"robot1": [x,y,z,r,p,y], ...}.
+
+        Resolves each pose to joint angles via /compute_ik, then plans all arms
+        as ONE combined-group motion (move_coordinated). Uses only proven paths
+        (compute_ik + coordinated joint planning) and yields a single collision-
+        checked trajectory - unlike move_poses (independent parallel plans).
+        """
+        joint_targets = {}
+        for name, pose in targets.items():
+            joints = self.compute_ik(name, pose)
+            if joints is None:
+                self.get_logger().error(
+                    f"[move_coordinated_poses] IK failed for {name}; aborting")
+                return False
+            joint_targets[name] = joints
+        return self.move_coordinated(joint_targets, vel_scale=vel_scale,
+                                     acc_scale=acc_scale)
+
+    # --- fleet-level single-arm convenience ------------------------------
+    def move_pose(self, arm, pose, vel_scale=0.3, acc_scale=0.3):
+        """Move one arm's tool0 to a base-frame Cartesian pose [x,y,z,r,p,y].
+
+        Convenience wrapper so move_pose is reachable on the fleet like
+        move_all / move_coordinated; equivalent to self.arm(arm).move_pose(pose).
+        """
+        return self.arm(arm).move_pose(pose, vel_scale=vel_scale,
+                                       acc_scale=acc_scale)
+
+    def move_joints(self, arm, positions, vel_scale=0.3, acc_scale=0.3):
+        """Move one arm to joint-space positions. Fleet-level wrapper over
+        Arm.move_joints, for symmetry with move_pose / move_all."""
+        return self.arm(arm).move_joints(positions, vel_scale=vel_scale,
+                                         acc_scale=acc_scale)
