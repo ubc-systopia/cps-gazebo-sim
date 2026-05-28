@@ -430,51 +430,157 @@ PY
   fi
   print_success "URDF generated: $urdf_file"
 }
+# Load package config from a predefined JSON spec (--from-json mode).
+# Sets globals: PACKAGE_NAME_FROM_JSON, LAUNCH_RVIZ_FROM_JSON, and the parallel
+# arrays JSON_ROBOT_NAMES, JSON_ROBOT_SPECS, JSON_INITIAL_POSITIONS.
+load_from_json() {
+  local path="$1"
+  if [ -z "$path" ]; then
+    print_error "--from-json requires a path"; exit 2
+  fi
+  if [ ! -f "$path" ]; then
+    print_error "JSON file not found: $path"; exit 1
+  fi
+  if ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$path" 2>/dev/null; then
+    print_error "Not valid JSON: $path"; exit 1
+  fi
+
+  local _json_lines
+  mapfile -t _json_lines < <(python3 - "$path" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1]))
+missing = [k for k in ("package_name", "robot_arms") if k not in d]
+if missing or not d.get("robot_arms"):
+    sys.stderr.write("missing/empty: " + (", ".join(missing) or "robot_arms (non-empty)") + "\n")
+    sys.exit(2)
+print(d["package_name"])
+print("true" if d.get("launch_rviz", True) else "false")
+for a in d["robot_arms"]:
+    bc, ij = a["base_coordinates"], a["initial_joints"]
+    print(":".join(str(v) for v in [
+        a["key"], a["model"],
+        bc["x"], bc["y"], bc["z"], bc["R"], bc["P"], bc["Y"],
+        ij["shoulder_pan"], ij["shoulder_lift"], ij["elbow"],
+        ij["wrist_1"], ij["wrist_2"], ij["wrist_3"],
+    ]))
+PY
+  )
+
+  if [ "${#_json_lines[@]}" -lt 3 ]; then
+    print_error "JSON missing required fields (need package_name and at least one robot_arms entry)"
+    exit 1
+  fi
+
+  PACKAGE_NAME_FROM_JSON="${_json_lines[0]}"
+  LAUNCH_RVIZ_FROM_JSON="${_json_lines[1]}"
+  JSON_ROBOT_SPECS=("${_json_lines[@]:2}")
+  JSON_ROBOT_NAMES=()
+  JSON_INITIAL_POSITIONS=()
+  local spec key model x y z R P Y pan lift elbow w1 w2 w3
+  for spec in "${JSON_ROBOT_SPECS[@]}"; do
+    IFS=':' read -r key model x y z R P Y pan lift elbow w1 w2 w3 <<< "$spec"
+    JSON_ROBOT_NAMES+=("$key")
+    JSON_INITIAL_POSITIONS+=("${key}:${pan},${lift},${elbow},${w1},${w2},${w3}")
+  done
+}
+
 # Main function
 main() {
+    # ---- CLI flags -------------------------------------------------------
+    local FROM_JSON_PATH=""
+    local NO_BUILD=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --from-json)
+                if [ -z "${2:-}" ]; then print_error "--from-json requires a path"; exit 2; fi
+                FROM_JSON_PATH="$2"; shift 2 ;;
+            --from-json=*) FROM_JSON_PATH="${1#*=}"; shift ;;
+            --no-build) NO_BUILD=1; shift ;;
+            -h|--help)
+                cat <<EOF
+Usage: $(basename "$0") [--no-build]                          # interactive
+       $(basename "$0") --from-json <file.json> [--no-build]  # from a spec file
+
+By default the script also runs colcon build for the new package. Pass
+--no-build to generate the files only. See configs/diff_robots.json for an
+example JSON spec.
+EOF
+                exit 0 ;;
+            -*) print_error "Unknown flag: $1"; exit 2 ;;
+            *)  print_error "Unexpected positional arg: $1"; exit 2 ;;
+        esac
+    done
+
+    # ---- Self-source ROS so the script works from a plain shell ----------
+    # (only sources humble if no ROS distro is already active, to respect the user's env)
+    set +e
+    if [ -z "${ROS_DISTRO:-}" ] && [ -f /opt/ros/humble/setup.bash ]; then
+        print_info "Sourcing /opt/ros/humble/setup.bash"
+        source /opt/ros/humble/setup.bash
+    fi
+    if [ -f "${WORKSPACE_ROOT}/install/setup.bash" ]; then
+        print_info "Sourcing ${WORKSPACE_ROOT}/install/setup.bash"
+        source "${WORKSPACE_ROOT}/install/setup.bash"
+    else
+        print_info "install/setup.bash not found yet (first build?) - colcon will create it."
+    fi
+    set -e
+
     echo "======================================"
     print_info "ROS Multi-Robot Package Creator"
     echo "======================================"
     echo ""
-    
-    # Get package name
-    echo -n "Enter package name: "
-    read package_name
-    
-    if [ -z "$package_name" ]; then
-        print_error "Package name cannot be empty"
-        exit 1
-    fi
-    
-    print_info "Package name set to: $package_name"
-    
-    # Get number of robots
+
+    local package_name
     local num_robots
-    num_robots=$(get_number_input "Enter number of robots" 1 10)
-    
-    print_info "Number of robots: $num_robots"
-    
-    # Get configuration for each robot
-    for ((i=1; i<=num_robots; i++)); do
+
+    if [ -n "$FROM_JSON_PATH" ]; then
+        load_from_json "$FROM_JSON_PATH"
+        package_name="$PACKAGE_NAME_FROM_JSON"
+        LAUNCH_RVIZ="$LAUNCH_RVIZ_FROM_JSON"
+        num_robots="${#JSON_ROBOT_NAMES[@]}"
+        print_info "Loaded from JSON: $FROM_JSON_PATH"
+        print_info "  package=\"$package_name\"  launch_rviz=$LAUNCH_RVIZ  arms=(${JSON_ROBOT_NAMES[*]})"
+    else
+        # ---- Interactive prompts ----------------------------------------
+        echo -n "Enter package name: "
+        read package_name
+        if [ -z "$package_name" ]; then
+            print_error "Package name cannot be empty"
+            exit 1
+        fi
+        print_info "Package name set to: $package_name"
+
+        num_robots=$(get_number_input "Enter number of robots" 1 10)
+        print_info "Number of robots: $num_robots"
+
+        for ((i=1; i<=num_robots; i++)); do
+            echo ""
+            echo "======================================"
+            get_robot_config "$i"
+        done
+
         echo ""
-        echo "======================================"
-        get_robot_config "$i"
-    done
-    
-    # Display summary
-    display_summary "$num_robots"
-    
-    # Confirm generation
-    echo -n "Generate ROS package with this configuration? (y/N): "
-    read confirm
-    
-    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        print_warning "Package generation cancelled"
-        exit 0
+        echo -n "Launch RViz with the demo? (Y/n): "
+        read launch_rviz_input
+        case "$launch_rviz_input" in
+            [Nn]*) LAUNCH_RVIZ="false" ;;
+            *)     LAUNCH_RVIZ="true"  ;;
+        esac
+        print_info "Launch RViz: $LAUNCH_RVIZ"
+
+        display_summary "$num_robots"
+
+        echo -n "Generate ROS package with this configuration? (y/N): "
+        read confirm
+        if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+            print_warning "Package generation cancelled"
+            exit 0
+        fi
     fi
-    
-    # Create package structure
-  print_info "Creating package structure under src..."
+
+    # ---- Common generation path ------------------------------------------
+    print_info "Creating package structure under src..."
     
   # Ensure src directory exists
   mkdir -p "${SRC_DIR}"
@@ -490,24 +596,30 @@ main() {
     robot_names=()
     robot_specs=()
     initial_positions=()
-    for ((i=1; i<=num_robots; i++)); do
-      robot_names+=("robot${i}")
-      robot_specs+=("robot${i}:${ROBOT_UR_TYPES[$((i-1))]}:${ROBOT_X_POSITIONS[$((i-1))]}:${ROBOT_Y_POSITIONS[$((i-1))]}:${ROBOT_Z_POSITIONS[$((i-1))]}:${ROBOT_ROLLS[$((i-1))]}:${ROBOT_PITCHES[$((i-1))]}:${ROBOT_YAWS[$((i-1))]}:${ROBOT_SHOULDER_PANS[$((i-1))]}:${ROBOT_SHOULDER_LIFTS[$((i-1))]}:${ROBOT_ELBOWS[$((i-1))]}:${ROBOT_WRIST_1S[$((i-1))]}:${ROBOT_WRIST_2S[$((i-1))]}:${ROBOT_WRIST_3S[$((i-1))]}")
-      initial_positions+=("robot${i}:${ROBOT_SHOULDER_PANS[$((i-1))]},${ROBOT_SHOULDER_LIFTS[$((i-1))]},${ROBOT_ELBOWS[$((i-1))]},${ROBOT_WRIST_1S[$((i-1))]},${ROBOT_WRIST_2S[$((i-1))]},${ROBOT_WRIST_3S[$((i-1))]}")
-    done
+    if [ -n "$FROM_JSON_PATH" ]; then
+      robot_names=("${JSON_ROBOT_NAMES[@]}")
+      robot_specs=("${JSON_ROBOT_SPECS[@]}")
+      initial_positions=("${JSON_INITIAL_POSITIONS[@]}")
+    else
+      for ((i=1; i<=num_robots; i++)); do
+        robot_names+=("robot${i}")
+        robot_specs+=("robot${i}:${ROBOT_UR_TYPES[$((i-1))]}:${ROBOT_X_POSITIONS[$((i-1))]}:${ROBOT_Y_POSITIONS[$((i-1))]}:${ROBOT_Z_POSITIONS[$((i-1))]}:${ROBOT_ROLLS[$((i-1))]}:${ROBOT_PITCHES[$((i-1))]}:${ROBOT_YAWS[$((i-1))]}:${ROBOT_SHOULDER_PANS[$((i-1))]}:${ROBOT_SHOULDER_LIFTS[$((i-1))]}:${ROBOT_ELBOWS[$((i-1))]}:${ROBOT_WRIST_1S[$((i-1))]}:${ROBOT_WRIST_2S[$((i-1))]}:${ROBOT_WRIST_3S[$((i-1))]}")
+        initial_positions+=("robot${i}:${ROBOT_SHOULDER_PANS[$((i-1))]},${ROBOT_SHOULDER_LIFTS[$((i-1))]},${ROBOT_ELBOWS[$((i-1))]},${ROBOT_WRIST_1S[$((i-1))]},${ROBOT_WRIST_2S[$((i-1))]},${ROBOT_WRIST_3S[$((i-1))]}")
+      done
+    fi
 
     # Generate all files using helper scripts
     bash "${SCRIPT_DIR}/helpers/generate_cmakelists.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_package_xml.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_demo_launch.sh" "$package_name" "$PKG_DIR"
-    bash "${SCRIPT_DIR}/helpers/generate_robots_json.sh" "$package_name" "$PKG_DIR" "${robot_specs[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_robots_json.sh" "$package_name" "$PKG_DIR" "$LAUNCH_RVIZ" "${robot_specs[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_joint_limits.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_kinematics.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_initial_positions.sh" "$package_name" "$PKG_DIR" "${initial_positions[@]}"
     controller_args=()
-    for ((i=1; i<=num_robots; i++)); do
-      joints="robot${i}_shoulder_pan_joint,robot${i}_shoulder_lift_joint,robot${i}_elbow_joint,robot${i}_wrist_1_joint,robot${i}_wrist_2_joint,robot${i}_wrist_3_joint"
-      controller_args+=("robot${i}_joint_trajectory_controller:$joints")
+    for name in "${robot_names[@]}"; do
+      joints="${name}_shoulder_pan_joint,${name}_shoulder_lift_joint,${name}_elbow_joint,${name}_wrist_1_joint,${name}_wrist_2_joint,${name}_wrist_3_joint"
+      controller_args+=("${name}_joint_trajectory_controller:$joints")
     done
     bash "${SCRIPT_DIR}/helpers/generate_controllers.sh" "$package_name" "$PKG_DIR" "${controller_args[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_moveit_controllers.sh" "$package_name" "$PKG_DIR" "${controller_args[@]}"
@@ -593,28 +705,29 @@ ament_package()
 EOF
 
 
-    # Generate controllers.yaml using helper script
-    controller_args=()
-    for ((i=1; i<=num_robots; i++)); do
-      joints="robot${i}_shoulder_pan_joint,robot${i}_shoulder_lift_joint,robot${i}_elbow_joint,robot${i}_wrist_1_joint,robot${i}_wrist_2_joint,robot${i}_wrist_3_joint"
-      controller_args+=("robot${i}_joint_trajectory_controller:$joints")
-    done
-    bash "${SCRIPT_DIR}/helpers/generate_controllers.sh" "$package_name" "$PKG_DIR" "${controller_args[@]}"
-
-    # Generate RViz config using helper script
-    robot_names=()
-    for ((i=1; i<=num_robots; i++)); do
-      robot_names+=("robot${i}")
-    done
-    bash "${SCRIPT_DIR}/helpers/generate_rviz_config.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
-
   print_success "Package '${package_name}' created successfully at: ${PKG_DIR}"
+
+    # ---- optional colcon build -----------------------------------------------
+    if [ "$NO_BUILD" = "1" ]; then
+        print_info "Skipping build (--no-build). To finish: colcon build --packages-select ${package_name}"
+    elif ! command -v colcon >/dev/null 2>&1; then
+        print_warning "colcon not found; skipping build. (Did you 'source /opt/ros/humble/setup.bash'?)"
+        print_warning "Run manually: colcon build --packages-select ${package_name}"
+    else
+        print_info "Building: colcon build --packages-select ${package_name}"
+        if ( cd "$WORKSPACE_ROOT" && colcon build --packages-select "$package_name" ); then
+            print_success "Built ${package_name}"
+        else
+            print_error "colcon build failed for ${package_name}"
+            exit 1
+        fi
+    fi
+
     echo ""
-    print_info "To build and test:"
-    echo "1. cd to your workspace root"
-    echo "2. colcon build --packages-select ${package_name}"
-    echo "3. source install/setup.bash"
-    echo "4. ros2 launch ${package_name} display.launch.py"
+    print_info "Next steps:"
+    echo "  source install/setup.bash                          # if not already"
+    echo "  ./scripts/launch_${package_name}                              # Gazebo + move_group (+ RViz if launch_rviz=true)"
+    echo "  python3 src/${package_name}/scripts/workflow_demo.py   # run the demo workflow"
     echo ""
     print_success "Done!"
 }

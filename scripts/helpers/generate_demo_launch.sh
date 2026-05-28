@@ -33,16 +33,21 @@ from launch.substitutions import Command, PathJoinSubstitution, FindExecutable
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.parameter_descriptions import ParameterValue
 
-def _read_robot_names(pkg_share: str):
+def _read_robots_json(pkg_share: str):
     try:
-        robots_json = os.path.join(pkg_share, 'config', 'robots.json')
-        with open(robots_json, 'r') as f:
-            data = json.load(f)
-        arms = data.get('robot_arms', [])
-        names = [a.get('key') for a in arms if isinstance(a, dict) and a.get('key')]
-        return names
+        with open(os.path.join(pkg_share, 'config', 'robots.json'), 'r') as f:
+            return json.load(f)
     except Exception:
-        return []
+        return {}
+
+def _read_robot_names(pkg_share: str):
+    data = _read_robots_json(pkg_share)
+    arms = data.get('robot_arms', [])
+    return [a.get('key') for a in arms if isinstance(a, dict) and a.get('key')]
+
+def _read_launch_rviz(pkg_share: str):
+    # default True to preserve behaviour for older packages without the field
+    return bool(_read_robots_json(pkg_share).get('launch_rviz', True))
 
 def generate_launch_description():
     ##### 1. MoveIt
@@ -129,6 +134,7 @@ def generate_launch_description():
     # Build spawners for each robot found in robots.json, plus joint_state_broadcaster
     pkg_share = get_package_share_directory('${PACKAGE_NAME}')
     robot_names = _read_robot_names(pkg_share)
+    launch_rviz = _read_launch_rviz(pkg_share)
 
     spawners = [
         make_spawner(working_controller_manager, f"{name}_joint_trajectory_controller")
@@ -144,15 +150,17 @@ def generate_launch_description():
         )
     )
 
-    return LaunchDescription([
+    ld_entries = [
         use_sim_time_arg,
         gz_sim,
         rsp_launch,
         spawn_entity,
         delayed_controllers,
         move_group_launch,
-        rviz_node
-    ])
+    ]
+    if launch_rviz:
+        ld_entries.append(rviz_node)
+    return LaunchDescription(ld_entries)
 PY
 
 chmod +x "$LAUNCH_PATH"
