@@ -42,7 +42,7 @@
   * Universal Robots - UR5e + UR3
 * Software:
   * *Not using ROS*
-  * ChemOS, AlabOS, Ares OS
+  * ChemOS, Ada
   * Custom python wrappers over vendor-native APIs
 * References:
   * https://www.researchgate.net/publication/352479603_Advancing_the_Pareto_front_using_a_self-driving_laboratory
