@@ -1,0 +1,26 @@
+{
+  "package_name": "rabit_lab",
+  "launch_rviz": false,
+  "robot_arms": [
+    {
+      "key": "arm_192_168_48_128",
+      "model": "ur3",
+      "base_coordinates": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": 0.0,
+        "R": 0.0,
+        "P": 0.0,
+        "Y": 0.0
+      },
+      "initial_joints": {
+        "shoulder_pan": 0.0,
+        "shoulder_lift": 0.0,
+        "elbow": 0.0,
+        "wrist_1": 0.0,
+        "wrist_2": 0.0,
+        "wrist_3": 0.0
+      }
+    }
+  ]
+}

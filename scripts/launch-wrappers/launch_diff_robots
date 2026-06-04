@@ -1,0 +1,7 @@
+
+#!/bin/bash
+# Launch script for diff_robots
+
+colcon build
+source install/setup.bash
+ros2 launch diff_robots demo.launch.py

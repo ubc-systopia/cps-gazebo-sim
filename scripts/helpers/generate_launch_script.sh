@@ -1,11 +1,13 @@
 #!/bin/bash
 # Usage: generate_launch_script.sh <package_name> <pkg_dir>
-# Creates a launch script in the scripts/ folder for the new package
+# Creates a launch script in the scripts/launch-wrappers/ folder for the new package
 
 PACKAGE_NAME="$1"
 PKG_DIR="$2"
 SCRIPTS_DIR="$(dirname "$0")/../.."
-LAUNCH_SCRIPT="${SCRIPTS_DIR}/scripts/launch_${PACKAGE_NAME}"
+WRAPPERS_DIR="${SCRIPTS_DIR}/scripts/launch-wrappers"
+mkdir -p "${WRAPPERS_DIR}"
+LAUNCH_SCRIPT="${WRAPPERS_DIR}/launch_${PACKAGE_NAME}"
 
 cat > "$LAUNCH_SCRIPT" << EOF
 

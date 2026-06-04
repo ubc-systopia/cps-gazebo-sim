@@ -1,0 +1,1178 @@
+{
+  "type": "object",
+  "properties": {
+    "package_name": {
+      "description": "Name of the ROS package to generate for this lab",
+      "type": "string"
+    },
+    "launch_rviz": {
+      "description": "Whether the generated demo.launch.py should start RViz",
+      "type": "boolean"
+    },
+    "robot_arms": {
+      "description": "Describes the robot arm objects that are part of a self-driving lab",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "class_name": {
+            "description": "The type of robot arm (i.e. UR3), comes from the experiment script",
+            "type": "string"
+          },
+          "model": {
+            "description": "UR model used to generate the ROS package; must be one of the supported ur_description types",
+            "type": "string",
+            "enum": [
+              "ur3",
+              "ur3e",
+              "ur5",
+              "ur5e",
+              "ur10",
+              "ur10e",
+              "ur16e",
+              "ur20",
+              "ur30"
+            ]
+          },
+          "margin_of_error": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "number"
+              },
+              "gripper_distance": {
+                "type": "number"
+              }
+            }
+          },
+          "actions": {
+            "description": "The mapping between the robot arm actions to the device specific commands",
+            "type": "object",
+            "properties": {
+              "move_robot": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "command_name": {
+                      "description": "A device command (if any) that maps to move_robot action",
+                      "type": "string"
+                    },
+                    "action_check": {
+                      "description": "A list of arguments (if any) that are important for distinguishing the commands associated with them",
+                      "type": "string"
+                    },
+                    "x, y, z": {
+                      "description": "A function that provides a way to extract the x, y, z coordinates from the arguments",
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "open_gripper": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "command_name": {
+                      "description": "A device command (if any) that maps to open_gripper action",
+                      "type": "string"
+                    },
+                    "action_check": {
+                      "description": "A list of arguments (if any) that are important for distinguishing the commands associated with them",
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "close_gripper": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "command_name": {
+                      "description": "A device command (if any) that maps to close_gripper action",
+                      "type": "string"
+                    },
+                    "action_check": {
+                      "description": "A list of arguments (if any) that are important for distinguishing the commands associated with them",
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "composite_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "command_name": {
+                      "type": "string"
+                    },
+                    "action_check": {
+                      "type": "string"
+                    },
+                    "actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "status_commands": {
+            "description": "The commands to get the actual physical state of the robot arms",
+            "type": "object",
+            "properties": {
+              "get_key": {
+                "type": "object",
+                "description": "A status command that allows to fetch the robot arm's key identifier (e.g. IP address, port, etc.). Command: function or a name of a class property that lets us get the key of the corresponding robot arm; response: the expecred response from executing the operation provided in 'command'; key: a function to postprocess the response to extract the key if needed",
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "set_state_variable": {
+                    "type": "string"
+                  }
+                }
+              },
+              "get_current_location": {
+                "description": "A status command that allows to fetch the current physical location of the robot arm relative to the established global coord system. Command: function or a name of a class property that lets us get the location of the corresponding robot arm; response: the expecred response from executing the operation provided in 'command'; x, y, z: a function to postprocess the response to extract the coordinates as (x, y, z) if needed",
+                "type": "object",
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "set_state_variable": {
+                    "type": "string"
+                  }
+                }
+              },
+              "get_gripper_status": {
+                "description": "A status command that allows to fetch the current gripper status of the robot arm. Command: function or a name of a class property that lets us get the gripper of the corresponding robot arm; response: the expecred response from executing the operation provided in 'command'; is_holding: a function to postprocess the response in order to update the robot arm's hoding state if needed",
+                "type": "object",
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "set_state_variable": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "instances": {
+            "description": "Separate instances of robot arms. Information that is unique to each (i.e. it's key) goes here. key: IP address, port, etc.; initial_location: the home position relative to the global coord system",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "shape": {
+                  "type": "object",
+                  "description": "shape_type: can be 'cuboid', 'sphere', 'hemisphere, 'cylider', or 'pyramid'; dimensions: specifies the length, width, height, and radius of a robot arm. Default to 0.0 if N/A; orientation: specifies whether the object is 'upright' (along the z-axis) or 'flat' (along the x-axis). Default to null if N/A",
+                  "properties": {
+                    "shape_type": {
+                      "type": "string"
+                    },
+                    "dimensions": {
+                      "type": "object",
+                      "properties": {
+                        "length": {
+                          "type": "number"
+                        },
+                        "width": {
+                          "type": "number"
+                        },
+                        "height": {
+                          "type": "number"
+                        },
+                        "radius": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "orientation": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "base_dimensions": {
+                  "type": "object",
+                  "description": "shape_type: can be 'cuboid', 'sphere', 'hemisphere, 'cylider', or 'pyramid'; dimensions: specifies the length, width, height, and radius of a robot arm. Default to 0.0 if N/A; orientation: specifies whether the object is 'upright' (along the z-axis) or 'flat' (along the x-axis). Default to null if N/A",
+                  "properties": {
+                    "dimensions": {
+                      "type": "object",
+                      "properties": {
+                        "length": {
+                          "type": "number"
+                        },
+                        "width": {
+                          "type": "number"
+                        },
+                        "height": {
+                          "type": "number"
+                        },
+                        "radius": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                },
+                "initial_location": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    },
+                    "z": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "robot_transformation": {
+                  "type": "object",
+                  "properties": {
+                    "base_x": {
+                      "type": "number"
+                    },
+                    "base_y": {
+                      "type": "number"
+                    },
+                    "base_z": {
+                      "type": "number"
+                    },
+                    "rotation_degree": {
+                      "type": "number"
+                    },
+                    "base_roll": {
+                      "description": "Base roll about X in radians (R for ROS base_coordinates)",
+                      "type": "number"
+                    },
+                    "base_pitch": {
+                      "description": "Base pitch about Y in radians (P for ROS base_coordinates)",
+                      "type": "number"
+                    },
+                    "gripper_length": {
+                      "type": "number"
+                    },
+                    "is_global_origin": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "initial_joints": {
+                  "description": "Initial joint angles (radians) used to seed the ROS package's ros2_control state interfaces and initial_positions.yaml",
+                  "type": "object",
+                  "properties": {
+                    "shoulder_pan": {
+                      "type": "number"
+                    },
+                    "shoulder_lift": {
+                      "type": "number"
+                    },
+                    "elbow": {
+                      "type": "number"
+                    },
+                    "wrist_1": {
+                      "type": "number"
+                    },
+                    "wrist_2": {
+                      "type": "number"
+                    },
+                    "wrist_3": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "state_variables": {
+                  "description": "Enter the values that the state variables will take as initial values; robot_gripper_status: True/False, True if robot's gripper is open, False otherwise",
+                  "type": "object",
+                  "properties": {
+                    "robot_gripper_status": {
+                      "type": "boolean"
+                    },
+                    "robot_holding": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "additionProperties": false
+      }
+    },
+    "action_devices": {
+      "description": "Describes the action device objects that are part of a self-driving lab",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "class_name": {
+            "description": "The type of action device, comes from the experiment script",
+            "type": "string"
+          },
+          "object_type": {
+            "type": "string"
+          },
+          "vial_holders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "z": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "dosing_heads": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "home_location": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "z": {
+                    "type": "number"
+                  }
+                },
+                "current_location": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "z": {
+                    "type": "number"
+                  }
+                },
+                "current_capacity": {
+                  "type": "number"
+                },
+                "shape": {
+                  "type": "object",
+                  "description": "shape_type: can be 'cuboid', 'sphere', 'hemisphere, 'cylider', or 'pyramid'; dimensions: specifies the length, width, height, and radius of a robot arm. Default to 0.0 if N/A; orientation: specifies whether the object is 'upright' (along the z-axis) or 'flat' (along the x-axis). Default to null if N/A",
+                  "properties": {
+                    "shape_type": {
+                      "type": "string"
+                    },
+                    "dimensions": {
+                      "type": "object",
+                      "properties": {
+                        "length": {
+                          "type": "number"
+                        },
+                        "width": {
+                          "type": "number"
+                        },
+                        "height": {
+                          "type": "number"
+                        },
+                        "radius": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "orientation": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "motor_home_position": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            }
+          },
+          "min_action_value": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "max_action_value": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "margin_of_error_action_value": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "barriers": {
+            "description": "Physical barriers (i.e. doors) or device boundaries that determine which object are allowed access through that barrier",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "shape": {
+                  "type": "object",
+                  "description": "shape_type: can be 'cuboid', 'sphere', 'hemisphere, 'cylider', or 'pyramid'; dimensions: specifies the length, width, height, and radius of a robot arm. Default to 0.0 if N/A; orientation: specifies whether the object is 'upright' (along the z-axis) or 'flat' (along the x-axis). Default to null if N/A",
+                  "properties": {
+                    "shape_type": {
+                      "type": "string"
+                    },
+                    "dimensions": {
+                      "type": "object",
+                      "properties": {
+                        "length": {
+                          "type": "number"
+                        },
+                        "width": {
+                          "type": "number"
+                        },
+                        "height": {
+                          "type": "number"
+                        },
+                        "radius": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "orientation": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "entrance_permissions": {
+                  "description": "A dictionary with a key, value pair where key is a lab object and value is a boolen denoting whether the corresponding lab object is allowed to enter the barrier",
+                  "type": "object"
+                },
+                "can_stay": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "boolean"
+                  }
+                },
+                "actions": {
+                  "description": "The mapping between the barrier actions and the device specific commands",
+                  "type": "object",
+                  "properties": {
+                    "open": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "command_name": {
+                            "description": "A device command (if any) that map to open action",
+                            "type": "string"
+                          },
+                          "action_check": {
+                            "description": "A list of arguments (if any) that are important for distinguishing the commands associated with them",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "close": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "command_name": {
+                            "description": "A device command (if any) that map to close action",
+                            "type": "string"
+                          },
+                          "action_check": {
+                            "description": "A list of arguments (if any) that are important for distinguishing the commands associated with them",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "composite_actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "command_name": {
+                            "type": "string"
+                          },
+                          "action_check": {
+                            "type": "string"
+                          },
+                          "actions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "action_name": {
+                            "type": "string"
+                          },
+                          "station": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "status_commands": {
+                  "type": "object",
+                  "properties": {
+                    "get_status": {
+                      "type": "object",
+                      "description": "Command: function or a name of a class property that lets us get the open/close status of the corresponding barrier; response: the expecred response from executing the operation provided in 'command'; is_barrier_open: a function to postprocess the response to extract the status of the barrier",
+                      "properties": {
+                        "command": {
+                          "type": "string"
+                        },
+                        "set_state_variable": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "actions": {
+            "description": "The mapping between the action device actions to the device specific commands",
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "command_name": {
+                        "type": "string"
+                      },
+                      "action_check": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "stop": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "command_name": {
+                        "type": "string"
+                      },
+                      "action_check": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "change_action_value": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "command_name": {
+                        "type": "string"
+                      },
+                      "action_check": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "composite_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "command_name": {
+                      "type": "string"
+                    },
+                    "action_check": {
+                      "type": "string"
+                    },
+                    "actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "status_commands": {
+            "description": "The commands to get the actual state of the action devices",
+            "type": "object",
+            "properties": {
+              "get_key": {
+                "type": "object",
+                "description": "A status command that allows to fetch the action device's key identifier (e.g. IP address, port, etc.). Command: function or a name of a class property that lets us get the key of the corresponding action device; response: the expecred response from executing the operation provided in 'command'; key: a function to postprocess the response to extract the key if needed",
+                "properties": {
+                  "command": {
+                    "type": "string"
+                  },
+                  "set_state_variable": {
+                    "type": "string"
+                  }
+                }
+              },
+              "get_action_value": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "command_name": {
+                      "type": "string"
+                    },
+                    "set_state_variable": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "get_action_device_status": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "command_name": {
+                      "type": "string"
+                    },
+                    "set_state_variable": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "instances": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "key: IP address, port, etc.; initial_location: the home position relative to the global coord system",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "shape": {
+                  "type": "object",
+                  "description": "shape_type: can be 'cuboid', 'sphere', 'hemisphere, 'cylider', or 'pyramid'; dimensions: specifies the length, width, height, and radius of a robot arm. Default to 0.0 if N/A; orientation: specifies whether the object is 'upright' (along the z-axis) or 'flat' (along the x-axis). Default to null if N/A",
+                  "properties": {
+                    "shape_type": {
+                      "type": "string"
+                    },
+                    "dimensions": {
+                      "type": "object",
+                      "properties": {
+                        "length": {
+                          "type": "number"
+                        },
+                        "width": {
+                          "type": "number"
+                        },
+                        "height": {
+                          "type": "number"
+                        },
+                        "radius": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "orientation": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "initial_location": {
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    },
+                    "z": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "barriers_instances": {
+                  "type": "array",
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "initial_location": {
+                      "description": "The initial position relative to the global coord system",
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        },
+                        "z": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "home_location": {
+                      "description": "The home position relative to the global coord system for non-software controlled ones",
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        },
+                        "z": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "state_variables": {
+                      "description": "Enter the values that the state variables will take as initial values; status : True/False, True if barrier is open, False otherwise",
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                },
+                "state_variables": {
+                  "type": "object",
+                  "description": "Enter the values that the state variables will take as initial values; action_device_status: a dictionary in the form of $action_name : True/False (True if active, False if not), action_value: a dictionare in the form of $action_name : $action_value",
+                  "properties": {
+                    "action_device_status": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "boolean"
+                      }
+                    },
+                    "action_value": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number"
+                      }
+                    },
+                    "motor_position": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "passive_objects": {
+      "description": "Describes the stationaty objects that are part of a self-driving lab but are not software-controlled",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "description": "User assigned name for an object, i.e. vial",
+            "type": "string"
+          },
+          "object_type": {
+            "type": "string"
+          },
+          "volume": {
+            "description": "How much the object can hold",
+            "type": "number"
+          },
+          "initial_location": {
+            "description": "The home position relative to the global coord system",
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            }
+          },
+          "shape": {
+            "type": "object",
+            "description": "shape_type: can be 'cuboid', 'sphere', 'hemisphere, 'cylider', or 'pyramid'; dimensions: specifies the length, width, height, and radius of a robot arm. Default to 0.0 if N/A; orientation: specifies whether the object is 'upright' (along the z-axis) or 'flat' (along the x-axis). Default to null if N/A",
+            "properties": {
+              "shape_type": {
+                "type": "string"
+              },
+              "dimensions": {
+                "type": "object",
+                "properties": {
+                  "length": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  },
+                  "radius": {
+                    "type": "number"
+                  }
+                }
+              },
+              "orientation": {
+                "type": "string"
+              }
+            }
+          },
+          "vial_holders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "z": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "barriers": {
+            "description": "Physical barriers (i.e. doors) or device boundaries that determine which object are allowed access through that barrier",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "shape": {
+                  "type": "object",
+                  "description": "shape_type: can be 'cuboid', 'sphere', 'hemisphere, 'cylider', or 'pyramid'; dimensions: specifies the length, width, height, and radius of a robot arm. Default to 0.0 if N/A; orientation: specifies whether the object is 'upright' (along the z-axis) or 'flat' (along the x-axis). Default to null if N/A",
+                  "properties": {
+                    "shape_type": {
+                      "type": "string"
+                    },
+                    "dimensions": {
+                      "type": "object",
+                      "properties": {
+                        "length": {
+                          "type": "number"
+                        },
+                        "width": {
+                          "type": "number"
+                        },
+                        "height": {
+                          "type": "number"
+                        },
+                        "radius": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "orientation": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "initial_location": {
+                  "description": "The home position relative to the global coord system",
+                  "type": "object",
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    },
+                    "z": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "entrance_permissions": {
+                  "description": "A dictionary with a key, value pair where key is a lab object and value is a boolen denoting whether the corresponding lab object is allowed to enter the barrier",
+                  "type": "object"
+                },
+                "can_stay": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  }
+                },
+                "state_variables": {
+                  "description": "Enter the values that the state variables will take as initial values; status : True/False, True if barrier is open, False otherwise",
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "actions": {
+                  "description": "The mapping between the barrier actions and the device specific commands",
+                  "type": "object",
+                  "properties": {
+                    "open": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "command_name": {
+                            "description": "A device command (if any) that maps to open action",
+                            "type": "string"
+                          },
+                          "action_check": {
+                            "description": "A list of arguments (if any) that are important for distinguishing the commands associated with them",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "close": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "command_name": {
+                            "description": "A device command (if any) that map to close action",
+                            "type": "string"
+                          },
+                          "action_check": {
+                            "description": "A list of arguments (if any) that are important for distinguishing the commands associated with them",
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "composite_actions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "command_name": {
+                            "type": "string"
+                          },
+                          "action_check": {
+                            "type": "string"
+                          },
+                          "actions": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "status_commands": {
+                  "type": "object",
+                  "properties": {
+                    "get_status": {
+                      "type": "object",
+                      "description": "Command: function or a name of a class property that lets us get the open/close status of the corresponding barrier; response: the expecred response from executing the operation provided in 'command'; is_barrier_open: a function to postprocess the response to extract the status of the barrier",
+                      "properties": {
+                        "command": {
+                          "type": "string"
+                        },
+                        "set_state_variable": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "state_variables": {
+            "description": "Enter the values that the state variables will take as initial values; current_volume: amount of a subtance inside the object",
+            "type": "object",
+            "properties": {
+              "current_volume": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "environment": {
+      "description": "Describes the physical boundaries within a self-driving lab",
+      "type": "object",
+      "properties": {
+        "boundary_coords": {
+          "description": "The center point of the physical experiment platform inclosed by the boundaries relative to the global coord system",
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          }
+        },
+        "boundary_shape": {
+          "type": "object",
+          "description": "shape_type: can be 'cuboid', 'sphere', 'hemisphere, 'cylider', or 'pyramid'; dimensions: specifies the length, width, height, and radius of a robot arm. Default to 0.0 if N/A; orientation: specifies whether the object is 'upright' (along the z-axis) or 'flat' (along the x-axis). Default to null if N/A",
+          "properties": {
+            "shape_type": {
+              "type": "string"
+            },
+            "dimensions": {
+              "type": "object",
+              "properties": {
+                "length": {
+                  "type": "number"
+                },
+                "width": {
+                  "type": "number"
+                },
+                "height": {
+                  "type": "number"
+                },
+                "radius": {
+                  "type": "number"
+                }
+              }
+            },
+            "orientation": {
+              "type": "string"
+            }
+          }
+        },
+        "walls_coords": {
+          "description": "A list of center points of physical walls within the experiment platform if those exist",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            }
+          }
+        },
+        "walls_shapes": {
+          "description": "A list of the shapes of the physical walls within the experiment platform if those exist",
+          "type": "array",
+          "items": {
+            "description": "shape_type: can be 'cuboid', 'sphere', 'hemisphere, 'cylider', or 'pyramid'; dimensions: specifies the length, width, height, and radius of a robot arm. Default to 0.0 if N/A; orientation: specifies whether the object is 'upright' (along the z-axis) or 'flat' (along the x-axis)",
+            "type": "object",
+            "properties": {
+              "shape_type": {
+                "type": "string"
+              },
+              "dimensions": {
+                "type": "object",
+                "properties": {
+                  "length": {
+                    "type": "number"
+                  },
+                  "width": {
+                    "type": "number"
+                  },
+                  "height": {
+                    "type": "number"
+                  },
+                  "radius": {
+                    "type": "number"
+                  }
+                }
+              },
+              "orientation": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

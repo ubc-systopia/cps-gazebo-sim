@@ -1,0 +1,161 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "diff_robots package spec",
+  "description": "Flat spec consumed by scripts/create-ros-pkg --from-json. Numeric fields accept either numbers or numeric strings.",
+  "type": "object",
+  "required": [
+    "package_name",
+    "robot_arms"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "package_name": {
+      "description": "ROS package name to generate; must be a valid ament package name",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "launch_rviz": {
+      "description": "Whether the generated demo.launch.py should start RViz",
+      "type": "boolean"
+    },
+    "robot_arms": {
+      "description": "One entry per physical arm",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "key",
+          "model",
+          "base_coordinates",
+          "initial_joints"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "description": "ROS-safe unique arm name (tf_prefix / joint-name root)",
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+          },
+          "model": {
+            "description": "Supported ur_description model",
+            "type": "string",
+            "enum": [
+              "ur3",
+              "ur3e",
+              "ur5",
+              "ur5e",
+              "ur10",
+              "ur10e",
+              "ur16e",
+              "ur20",
+              "ur30"
+            ]
+          },
+          "base_coordinates": {
+            "description": "Base pose in the world frame: x/y/z metres, R/P/Y radians",
+            "type": "object",
+            "required": [
+              "x",
+              "y",
+              "z",
+              "R",
+              "P",
+              "Y"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "x": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "y": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "z": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "R": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "P": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "Y": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            }
+          },
+          "initial_joints": {
+            "description": "Initial joint angles (radians)",
+            "type": "object",
+            "required": [
+              "shoulder_pan",
+              "shoulder_lift",
+              "elbow",
+              "wrist_1",
+              "wrist_2",
+              "wrist_3"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "shoulder_pan": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "shoulder_lift": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "elbow": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "wrist_1": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "wrist_2": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              },
+              "wrist_3": {
+                "type": [
+                  "number",
+                  "string"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

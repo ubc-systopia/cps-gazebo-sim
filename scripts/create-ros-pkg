@@ -488,6 +488,7 @@ PY
 main() {
     # ---- CLI flags -------------------------------------------------------
     local FROM_JSON_PATH=""
+    local RABIT_PATH=""
     local NO_BUILD=0
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -495,21 +496,48 @@ main() {
                 if [ -z "${2:-}" ]; then print_error "--from-json requires a path"; exit 2; fi
                 FROM_JSON_PATH="$2"; shift 2 ;;
             --from-json=*) FROM_JSON_PATH="${1#*=}"; shift ;;
+            --rabit)
+                if [ -z "${2:-}" ]; then print_error "--rabit requires a path"; exit 2; fi
+                RABIT_PATH="$2"; shift 2 ;;
+            --rabit=*) RABIT_PATH="${1#*=}"; shift ;;
             --no-build) NO_BUILD=1; shift ;;
             -h|--help)
                 cat <<EOF
 Usage: $(basename "$0") [--no-build]                          # interactive
-       $(basename "$0") --from-json <file.json> [--no-build]  # from a spec file
+       $(basename "$0") --from-json <file.json> [--no-build]  # from a diff_robots-style spec
+       $(basename "$0") --rabit <file.json> [--no-build]      # from a general-schema (RABIT) config
 
 By default the script also runs colcon build for the new package. Pass
---no-build to generate the files only. See configs/diff_robots.json for an
-example JSON spec.
+--no-build to generate the files only.
+
+--from-json takes a flat diff_robots.json-style spec (see configs/diff_robots.json).
+--rabit takes a general-schema lab config (see configs/rabit-config-2.json); it is
+translated to the diff_robots format via scripts/translate-config and then used
+exactly like --from-json. The two flags are mutually exclusive.
 EOF
                 exit 0 ;;
             -*) print_error "Unknown flag: $1"; exit 2 ;;
             *)  print_error "Unexpected positional arg: $1"; exit 2 ;;
         esac
     done
+
+    # ---- RABIT translation step -----------------------------------------
+    # When --rabit is given, translate the general-schema config into a flat
+    # diff_robots spec (temp file) and feed it through the normal --from-json path.
+    if [ -n "$RABIT_PATH" ]; then
+        if [ -n "$FROM_JSON_PATH" ]; then
+            print_error "--rabit and --from-json are mutually exclusive"; exit 2
+        fi
+        if [ ! -f "$RABIT_PATH" ]; then
+            print_error "--rabit file not found: $RABIT_PATH"; exit 1
+        fi
+        FROM_JSON_PATH="$(mktemp -t rabit-translated-XXXXXX.json)"
+        print_info "Translating RABIT/general-schema config: $RABIT_PATH"
+        if ! python3 "${SCRIPT_DIR}/translate-config" "$RABIT_PATH" "$FROM_JSON_PATH"; then
+            print_error "translation failed (see scripts/translate-config output above)"; exit 1
+        fi
+        print_info "Translated spec written to: $FROM_JSON_PATH"
+    fi
 
     # ---- Self-source ROS so the script works from a plain shell ----------
     # (only sources humble if no ROS distro is already active, to respect the user's env)
@@ -726,7 +754,7 @@ EOF
     echo ""
     print_info "Next steps:"
     echo "  source install/setup.bash                          # if not already"
-    echo "  ./scripts/launch_${package_name}                              # Gazebo + move_group (+ RViz if launch_rviz=true)"
+    echo "  ./scripts/launch-wrappers/launch_${package_name}              # Gazebo + move_group (+ RViz if launch_rviz=true)"
     echo "  python3 src/${package_name}/scripts/workflow_demo.py   # run the demo workflow"
     echo ""
     print_success "Done!"

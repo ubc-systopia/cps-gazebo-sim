@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+"""translate-config - Translate a general-schema lab config (e.g. rabit-config-2.json)
+into the flat diff_robots.json spec that create-ros-pkg --from-json consumes.
+
+Usage:
+    scripts/translate-config <source.json> <destination.json>
+
+The source must follow general-schema-2.json (i.e. each robot arm carries a
+`model` and each instance carries `initial_joints`). One robot_arms entry with N
+instances is flattened into N arms in the output. Everything that isn't relevant
+to ROS package generation (action_devices, passive_objects, environment) is
+dropped.
+"""
+
+import argparse
+import json
+import math
+import re
+import sys
+
+# class_name (from the experiment script) -> supported ur_description model.
+CLASS_TO_MODEL = {
+    "UR3Arm": "ur3", "UR3eArm": "ur3e", "UR5Arm": "ur5", "UR5eArm": "ur5e",
+    "UR10Arm": "ur10", "UR10eArm": "ur10e", "UR16eArm": "ur16e",
+    "UR20Arm": "ur20", "UR30Arm": "ur30",
+}
+VALID_MODELS = {"ur3", "ur3e", "ur5", "ur5e", "ur10", "ur10e", "ur16e", "ur20", "ur30"}
+JOINTS = ("shoulder_pan", "shoulder_lift", "elbow", "wrist_1", "wrist_2", "wrist_3")
+
+
+def die(msg):
+    print(f"[ERROR] {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def slugify(key, used):
+    """Turn an arbitrary instance key (e.g. an IP) into a unique ROS-safe name."""
+    name = re.sub(r"[^A-Za-z0-9_]", "_", str(key)).strip("_")
+    name = re.sub(r"_+", "_", name)
+    if not name:
+        name = "arm"
+    if name[0].isdigit():
+        name = "arm_" + name
+    candidate, n = name, 2
+    while candidate in used:
+        candidate = f"{name}_{n}"
+        n += 1
+    used.add(candidate)
+    return candidate
+
+
+def resolve_model(arm):
+    model = arm.get("model") or CLASS_TO_MODEL.get(arm.get("class_name", ""))
+    if model not in VALID_MODELS:
+        die(f"cannot resolve a supported UR model for arm "
+            f"(class_name={arm.get('class_name')!r}, model={arm.get('model')!r}). "
+            f"Add a `model` field (one of {sorted(VALID_MODELS)}).")
+    return model
+
+
+def translate(src):
+    if "package_name" not in src:
+        die("source is missing top-level `package_name`.")
+    out = {
+        "package_name": src["package_name"],
+        "launch_rviz": bool(src.get("launch_rviz", True)),
+        "robot_arms": [],
+    }
+    used_keys = set()
+    for arm in src.get("robot_arms", []):
+        model = resolve_model(arm)
+        for inst in arm.get("instances", []):
+            rt = inst.get("robot_transformation") or {}
+            ij = inst.get("initial_joints") or {}
+            out["robot_arms"].append({
+                "key": slugify(inst.get("key", "arm"), used_keys),
+                "model": model,
+                "base_coordinates": {
+                    "x": rt.get("base_x", 0.0),
+                    "y": rt.get("base_y", 0.0),
+                    "z": rt.get("base_z", 0.0),
+                    "R": rt.get("base_roll", 0.0),
+                    "P": rt.get("base_pitch", 0.0),
+                    "Y": math.radians(rt.get("rotation_degree", 0.0)),
+                },
+                "initial_joints": {j: ij.get(j, 0.0) for j in JOINTS},
+            })
+    if not out["robot_arms"]:
+        die("source produced no robot arms (no robot_arms[].instances[] found).")
+    return out
+
+
+def main():
+    p = argparse.ArgumentParser(description="Translate a general-schema lab config into a diff_robots.json spec.")
+    p.add_argument("source", help="path to the general-schema config (e.g. rabit-config-2.json)")
+    p.add_argument("destination", help="path to write the diff_robots.json-style spec")
+    args = p.parse_args()
+
+    try:
+        with open(args.source) as f:
+            src = json.load(f)
+    except FileNotFoundError:
+        die(f"source file not found: {args.source}")
+    except json.JSONDecodeError as e:
+        die(f"source is not valid JSON: {e}")
+
+    out = translate(src)
+
+    with open(args.destination, "w") as f:
+        json.dump(out, f, indent=2)
+        f.write("\n")
+
+    print(f"[OK] wrote {args.destination}  "
+          f"(package={out['package_name']}, arms={[a['key'] for a in out['robot_arms']]})")
+
+
+if __name__ == "__main__":
+    main()
