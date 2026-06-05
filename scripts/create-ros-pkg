@@ -404,15 +404,22 @@ render_template_xacro() {
   print_success "Template XACRO rendered: $out_file"
 }
 
-# Expand a XACRO file into a URDF file
+# Expand a XACRO file into a URDF file.
+# NON-FATAL: a brand-new package's main XACRO contains a self-reference
+# ($(find <pkg>)/config/controllers.yaml) that cannot resolve until the package
+# is installed, so this pre-build expansion is expected to fail on first
+# creation. The flat .urdf is not needed for the build or launch (demo.launch.py
+# expands the .urdf.xacro directly post-build), so we warn and continue rather
+# than aborting before colcon build. Always returns 0.
 expand_xacro_to_urdf() {
   local xacro_file=$1
   local urdf_file=$2
-  print_info "Generating URDF from XACRO: $(basename \"$xacro_file\")"
+  local status=0
+  print_info "Generating URDF from XACRO: $(basename "$xacro_file")"
   if command -v xacro >/dev/null 2>&1; then
-    xacro "$xacro_file" -o "$urdf_file" 2>/dev/null
+    xacro "$xacro_file" -o "$urdf_file" 2>/dev/null || status=$?
   elif command -v ros2 >/dev/null 2>&1; then
-    ros2 run xacro xacro "$xacro_file" -o "$urdf_file" 2>/dev/null
+    ros2 run xacro xacro "$xacro_file" -o "$urdf_file" 2>/dev/null || status=$?
   else
     if python3 - << 'PY'
 import sys
@@ -422,13 +429,20 @@ except Exception:
     sys.exit(1)
 PY
     then
-      python3 -m xacro "$xacro_file" -o "$urdf_file" 2>/dev/null
+      python3 -m xacro "$xacro_file" -o "$urdf_file" 2>/dev/null || status=$?
     else
-      print_error "Could not find xacro CLI. Please ensure the ROS xacro package is installed."
-      return 1
+      print_warning "Could not find xacro CLI; skipping flat URDF (it is regenerated at launch)."
+      return 0
     fi
   fi
-  print_success "URDF generated: $urdf_file"
+  if [ "$status" -eq 0 ] && [ -f "$urdf_file" ]; then
+    print_success "URDF generated: $urdf_file"
+  else
+    print_warning "Flat URDF not generated yet (exit=$status). This is normal on first creation"
+    print_warning "(the XACRO self-references \$(find ${package_name}), resolvable only after build)."
+    print_warning "It is expanded automatically at launch, or run regenerate-pkg after the build."
+  fi
+  return 0
 }
 # Load package config from a predefined JSON spec (--from-json mode).
 # Sets globals: PACKAGE_NAME_FROM_JSON, LAUNCH_RVIZ_FROM_JSON, and the parallel
@@ -562,11 +576,16 @@ EOF
     local package_name
     local num_robots
 
+    # static_objects (optional) are passed verbatim into robots.json via this env
+    # var; default to none. Only the JSON/RABIT path can carry them today.
+    local STATIC_OBJECTS_JSON="[]"
+
     if [ -n "$FROM_JSON_PATH" ]; then
         load_from_json "$FROM_JSON_PATH"
         package_name="$PACKAGE_NAME_FROM_JSON"
         LAUNCH_RVIZ="$LAUNCH_RVIZ_FROM_JSON"
         num_robots="${#JSON_ROBOT_NAMES[@]}"
+        STATIC_OBJECTS_JSON="$(python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1])).get("static_objects", [])))' "$FROM_JSON_PATH")"
         print_info "Loaded from JSON: $FROM_JSON_PATH"
         print_info "  package=\"$package_name\"  launch_rviz=$LAUNCH_RVIZ  arms=(${JSON_ROBOT_NAMES[*]})"
     else
@@ -640,7 +659,8 @@ EOF
     bash "${SCRIPT_DIR}/helpers/generate_cmakelists.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_package_xml.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_demo_launch.sh" "$package_name" "$PKG_DIR"
-    bash "${SCRIPT_DIR}/helpers/generate_robots_json.sh" "$package_name" "$PKG_DIR" "$LAUNCH_RVIZ" "${robot_specs[@]}"
+    STATIC_OBJECTS_JSON="$STATIC_OBJECTS_JSON" bash "${SCRIPT_DIR}/helpers/generate_robots_json.sh" "$package_name" "$PKG_DIR" "$LAUNCH_RVIZ" "${robot_specs[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_world_sdf.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_joint_limits.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_kinematics.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_initial_positions.sh" "$package_name" "$PKG_DIR" "${initial_positions[@]}"
@@ -652,12 +672,15 @@ EOF
     bash "${SCRIPT_DIR}/helpers/generate_controllers.sh" "$package_name" "$PKG_DIR" "${controller_args[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_moveit_controllers.sh" "$package_name" "$PKG_DIR" "${controller_args[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_srdf.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
+    bash "${SCRIPT_DIR}/helpers/generate_ompl_planning.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
     bash "${SCRIPT_DIR}/helpers/generate_rviz_config.sh" "$package_name" "$PKG_DIR" "${robot_names[@]}"
 
   # Generate launch script for the new package
   bash "${SCRIPT_DIR}/helpers/generate_launch_script.sh" "$package_name" "$PKG_DIR"
     # Thin demo workflow that drives this package via the multi_arm_control library
     bash "${SCRIPT_DIR}/helpers/generate_workflow_demo.sh" "$package_name" "$PKG_DIR"
+    # Launch-time node that adds static_objects to the MoveIt planning scene
+    bash "${SCRIPT_DIR}/helpers/generate_scene_publisher.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_sensors_3d.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_pilz_cartesian_limits.sh" "$package_name" "$PKG_DIR"
     bash "${SCRIPT_DIR}/helpers/generate_pkg_xacro.sh" "$package_name" "$PKG_DIR" "${robot_specs[@]}"
@@ -696,6 +719,10 @@ EOF
   <depend>multi_ur_description</depend>
   <exec_depend>multi_arm_control</exec_depend>
   <exec_depend>pick_ik</exec_depend>
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>moveit_msgs</exec_depend>
+  <exec_depend>shape_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
@@ -723,6 +750,14 @@ install(
   DIRECTORY config launch urdf
   DESTINATION share/\${PROJECT_NAME}
 )
+
+# Install the launch-time planning-scene publisher as a runnable node
+if(EXISTS "\${CMAKE_CURRENT_SOURCE_DIR}/scripts/scene_publisher.py")
+  install(
+    PROGRAMS scripts/scene_publisher.py
+    DESTINATION lib/\${PROJECT_NAME}
+  )
+endif()
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -1,6 +1,14 @@
 [
   {
     "op": "add",
+    "path": "/properties/launch_rviz",
+    "value": {
+      "description": "Whether the generated demo.launch.py should start RViz",
+      "type": "boolean"
+    }
+  },
+  {
+    "op": "add",
     "path": "/properties/package_name",
     "value": {
       "description": "Name of the ROS package to generate for this lab",
@@ -9,10 +17,40 @@
   },
   {
     "op": "add",
-    "path": "/properties/launch_rviz",
+    "path": "/properties/passive_objects/items/properties/initial_orientation",
     "value": {
-      "description": "Whether the generated demo.launch.py should start RViz",
-      "type": "boolean"
+      "description": "Object orientation [R, P, Y] in radians (roll about X, pitch about Y, yaw about Z). Optional; defaults to 0,0,0. Maps to the roll/pitch/yaw components of the generated static_objects pose so objects can be placed at angles.",
+      "type": "object",
+      "properties": {
+        "R": {
+          "type": "number"
+        },
+        "P": {
+          "type": "number"
+        },
+        "Y": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/properties/action_devices/items/properties/instances/items/properties/initial_orientation",
+    "value": {
+      "description": "Instance orientation [R, P, Y] in radians. Optional; defaults to 0,0,0. Maps to the roll/pitch/yaw of the generated static_objects pose.",
+      "type": "object",
+      "properties": {
+        "R": {
+          "type": "number"
+        },
+        "P": {
+          "type": "number"
+        },
+        "Y": {
+          "type": "number"
+        }
+      }
     }
   },
   {

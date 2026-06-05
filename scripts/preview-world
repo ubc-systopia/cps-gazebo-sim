@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+"""preview-world - open a Gazebo world built from a lab config's static objects.
+
+No ROS package, no MoveIt, no arms -- just the objects, for iterating on lab
+layout before committing to a full create-ros-pkg run. Accepts either an SDL /
+RABIT config (passive_objects / action_devices / environment.walls) or a flat
+diff_robots-style spec (static_objects).
+
+Usage:
+    scripts/preview-world <config.json> [-o world.sdf] [--no-gui]
+
+Reuses translate-config's object mapping and generate_world_sdf.sh's SDF emitter,
+so what you preview matches what create-ros-pkg would later spawn.
+"""
+
+import argparse
+import importlib.util
+import json
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from importlib.machinery import SourceFileLoader
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+HELPERS = os.path.join(SCRIPT_DIR, "helpers")
+
+
+def die(msg):
+    print(f"[ERROR] {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def _load_translate_config():
+    """Import translate-config (a hyphenated, extensionless script) as a module
+    so we can reuse its passive_objects/action_devices/walls mappings."""
+    path = os.path.join(SCRIPT_DIR, "translate-config")
+    # The file has no .py extension, so use an explicit source loader.
+    loader = SourceFileLoader("translate_config", path)
+    spec = importlib.util.spec_from_loader("translate_config", loader)
+    mod = importlib.util.module_from_spec(spec)
+    loader.exec_module(mod)  # safe: main() only runs under __main__
+    return mod
+
+
+def objects_from_config(src):
+    """Return a list of static_objects from either a flat spec or an SDL config."""
+    if isinstance(src.get("static_objects"), list):
+        return src["static_objects"]  # flat spec already has them
+    tc = _load_translate_config()
+    used = set()
+    return (
+        tc.translate_passive_objects(src, used)
+        + tc.translate_action_devices(src, used)
+        + tc.translate_walls(src, used)
+    )
+
+
+def find_simulator():
+    """Return ('ign','gazebo') or ('gz','sim') depending on what's installed."""
+    if shutil.which("ign"):
+        return ("ign", "gazebo")
+    if shutil.which("gz"):
+        return ("gz", "sim")
+    return None
+
+
+def main():
+    p = argparse.ArgumentParser(
+        description="Preview a lab config's static objects in Gazebo (no arms/ROS/MoveIt).")
+    p.add_argument("config", help="lab config (SDL/RABIT or flat spec) to preview")
+    p.add_argument("-o", "--output", help="also write the generated world.sdf to this path")
+    p.add_argument("--no-gui", action="store_true", help="run the simulator server headless (no GUI)")
+    p.add_argument("--print-only", action="store_true",
+                   help="generate the world.sdf and print its path; do not launch Gazebo")
+    args = p.parse_args()
+
+    try:
+        with open(args.config) as f:
+            src = json.load(f)
+    except FileNotFoundError:
+        die(f"config not found: {args.config}")
+    except json.JSONDecodeError as e:
+        die(f"invalid JSON: {e}")
+
+    objects = objects_from_config(src)
+    if not objects:
+        die("no static objects found (need static_objects, or passive_objects / "
+            "action_devices / environment.walls).")
+
+    # Build world.sdf via the existing helper: write a temp robots.json then call it.
+    # Everything past here is wrapped so the temp dir is always cleaned up -- even
+    # on die() (SystemExit) -- except when --print-only must hand back a temp path.
+    tmp = tempfile.mkdtemp(prefix="preview-world-")
+    keep_tmp = False
+    try:
+        os.makedirs(os.path.join(tmp, "config"), exist_ok=True)
+        with open(os.path.join(tmp, "config", "robots.json"), "w") as f:
+            json.dump({"static_objects": objects}, f)
+
+        r = subprocess.run(["bash", os.path.join(HELPERS, "generate_world_sdf.sh"), "preview", tmp])
+        world = os.path.join(tmp, "config", "world.sdf")
+        if r.returncode != 0 or not os.path.exists(world):
+            die("world.sdf generation failed (no supported object geometries?)")
+
+        if args.output:
+            shutil.copy(world, args.output)
+            print(f"[OK] wrote {args.output}")
+
+        print(f"[OK] previewing {len(objects)} object(s): {[o['name'] for o in objects]}")
+
+        if args.print_only:
+            # Print a path that stays valid: the saved -o copy if given, else the
+            # temp world (which we then must NOT delete).
+            if args.output:
+                print(os.path.abspath(args.output))
+            else:
+                keep_tmp = True
+                print(world)
+            return
+
+        sim = find_simulator()
+        if sim is None:
+            die("no 'ign' or 'gz' simulator on PATH (source your Gazebo install).")
+        cmd = [sim[0], sim[1], "-r"]
+        if args.no_gui:
+            cmd.append("-s")  # server only
+        cmd.append(world)
+        print(f"[INFO] launching: {' '.join(cmd)}")
+        subprocess.run(cmd)
+    finally:
+        if not keep_tmp:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    main()

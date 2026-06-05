@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!-- Wrapper modeled after two_arm mutli_arm.urdf.xacro, generalized for any number of robots -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="rabit_lab">
+  <!-- Initial joint positions YAML used by the ros2_control macro -->
+  <xacro:arg name="initial_positions_file" default="$(find rabit_lab)/config/initial_positions.yaml" />
+
+  <!-- Import multi-robot URDF assembly for this package -->
+  <xacro:include filename="$(find rabit_lab)/urdf/rabit_lab.urdf" />
+
+  <!-- Import ros2_control macro Xacro placed alongside this wrapper in urdf/ -->
+  <xacro:include filename="rabit_lab.ros2_control.xacro" />
+
+  <!-- Optionally instantiate the control macro (kept commented like the reference): -->
+  <!-- <xacro:multi_arm_ros2_control name="ign_ros2_control/IgnitionSystem" initial_positions_file="$(arg initial_positions_file)"/> -->
+
+</robot>

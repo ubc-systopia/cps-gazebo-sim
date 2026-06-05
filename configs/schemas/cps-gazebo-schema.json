@@ -18,6 +18,56 @@
       "description": "Whether the generated demo.launch.py should start RViz",
       "type": "boolean"
     },
+    "static_objects": {
+      "description": "Static (immovable) objects spawned into the Gazebo world. Rendered into config/world.sdf by generate_world_sdf.sh and loaded by demo.launch.py.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "pose"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "Unique model name in the world",
+            "type": "string"
+          },
+          "pose": {
+            "description": "World pose [x, y, z, roll, pitch, yaw] (metres, radians)",
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 6,
+            "maxItems": 6
+          },
+          "box": {
+            "description": "Box geometry [size_x, size_y, size_z] (metres)",
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "cylinder": {
+            "description": "Cylinder geometry",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["radius", "length"],
+            "properties": {
+              "radius": { "type": "number" },
+              "length": { "type": "number" }
+            }
+          },
+          "sphere": {
+            "description": "Sphere geometry",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["radius"],
+            "properties": { "radius": { "type": "number" } }
+          },
+          "include": {
+            "description": "package:// URI of a reusable Gazebo model (alternative to a primitive geometry)",
+            "type": "string"
+          }
+        }
+      }
+    },
     "robot_arms": {
       "description": "One entry per physical arm",
       "type": "array",

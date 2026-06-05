@@ -29,6 +29,11 @@ fi
 {
   echo "{";
   echo "  \"launch_rviz\": ${LAUNCH_RVIZ_JSON},";
+  # Optional static_objects, passed verbatim as a compact JSON array via the
+  # STATIC_OBJECTS_JSON env var (empty or "[]" means none).
+  if [ -n "${STATIC_OBJECTS_JSON:-}" ] && [ "${STATIC_OBJECTS_JSON}" != "[]" ]; then
+    echo "  \"static_objects\": ${STATIC_OBJECTS_JSON},";
+  fi
   echo "  \"robot_arms\": [";
 
   first=1

@@ -58,14 +58,101 @@ def resolve_model(arm):
     return model
 
 
+def geometry_from_shape(shape):
+    """Map an SDL shape -> a static_objects primitive (box/cylinder/sphere).
+    Returns None for shape types static_objects can't represent."""
+    st = (shape.get("shape_type") or "").lower()
+    d = shape.get("dimensions") or {}
+    if st == "cuboid":
+        return {"box": [float(d.get("length", 0.0)), float(d.get("width", 0.0)), float(d.get("height", 0.0))]}
+    if st == "cylinder":
+        return {"cylinder": {"radius": float(d.get("radius", 0.0)), "length": float(d.get("height", 0.0))}}
+    if st == "sphere":
+        return {"sphere": {"radius": float(d.get("radius", 0.0))}}
+    return None  # hemisphere / pyramid have no static_objects equivalent
+
+
+def _make_static_object(name_key, shape, loc, ori, used, what):
+    """Build one static_object dict, or None if the shape is unsupported."""
+    geo = geometry_from_shape(shape or {})
+    if geo is None:
+        sys.stderr.write(
+            f"[WARN] skipping {what} {name_key!r}: "
+            f"unsupported shape_type {(shape or {}).get('shape_type')!r}\n")
+        return None
+    loc = loc or {}
+    ori = ori or {}
+    obj = {
+        "name": slugify(name_key, used),
+        "pose": [
+            float(loc.get("x", 0.0)), float(loc.get("y", 0.0)), float(loc.get("z", 0.0)),
+            float(ori.get("R", 0.0)), float(ori.get("P", 0.0)), float(ori.get("Y", 0.0)),
+        ],
+    }
+    obj.update(geo)
+    return obj
+
+
+def translate_passive_objects(src, used):
+    """Map SDL passive_objects -> flat static_objects."""
+    objects = []
+    for po in src.get("passive_objects", []):
+        obj = _make_static_object(po.get("key", "object"), po.get("shape"),
+                                  po.get("initial_location"), po.get("initial_orientation"),
+                                  used, "passive_object")
+        if obj is not None:
+            objects.append(obj)
+    return objects
+
+
+def translate_action_devices(src, used):
+    """Map each SDL action_devices[].instances[] -> a static_object (physical obstacle)."""
+    objects = []
+    for dev in src.get("action_devices", []):
+        for inst in dev.get("instances", []):
+            obj = _make_static_object(inst.get("key", "device"), inst.get("shape"),
+                                      inst.get("initial_location"), inst.get("initial_orientation"),
+                                      used, "action_device instance")
+            if obj is not None:
+                objects.append(obj)
+    return objects
+
+
+def translate_walls(src, used):
+    """Map SDL environment walls (parallel walls_coords / walls_shapes arrays) -> static_objects."""
+    env = src.get("environment") or {}
+    coords = env.get("walls_coords") or []
+    shapes = env.get("walls_shapes") or []
+    objects = []
+    for i, shape in enumerate(shapes):
+        loc = coords[i] if i < len(coords) else {}
+        # walls carry no orientation field today, so they default axis-aligned.
+        obj = _make_static_object(f"wall_{i + 1}", shape, loc, None, used, "wall")
+        if obj is not None:
+            objects.append(obj)
+    return objects
+
+
 def translate(src):
     if "package_name" not in src:
         die("source is missing top-level `package_name`.")
     out = {
         "package_name": src["package_name"],
         "launch_rviz": bool(src.get("launch_rviz", True)),
-        "robot_arms": [],
     }
+
+    # Static world objects from SDL passive_objects, action_devices and walls.
+    # They share one name namespace (separate from arm keys) so names stay unique.
+    used_obj = set()
+    static_objects = (
+        translate_passive_objects(src, used_obj)
+        + translate_action_devices(src, used_obj)
+        + translate_walls(src, used_obj)
+    )
+    if static_objects:
+        out["static_objects"] = static_objects
+
+    out["robot_arms"] = []
     used_keys = set()
     for arm in src.get("robot_arms", []):
         model = resolve_model(arm)
@@ -110,8 +197,10 @@ def main():
         json.dump(out, f, indent=2)
         f.write("\n")
 
+    objs = [o["name"] for o in out.get("static_objects", [])]
     print(f"[OK] wrote {args.destination}  "
-          f"(package={out['package_name']}, arms={[a['key'] for a in out['robot_arms']]})")
+          f"(package={out['package_name']}, arms={[a['key'] for a in out['robot_arms']]}, "
+          f"static_objects={objs})")
 
 
 if __name__ == "__main__":

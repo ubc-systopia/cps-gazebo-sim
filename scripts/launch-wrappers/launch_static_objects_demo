@@ -1,0 +1,7 @@
+
+#!/bin/bash
+# Launch script for static_objects_demo
+
+colcon build
+source install/setup.bash
+ros2 launch static_objects_demo demo.launch.py

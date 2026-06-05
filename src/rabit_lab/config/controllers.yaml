@@ -1,0 +1,39 @@
+# controllers.yaml generated dynamically
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+    use_sim_time: true
+
+    # Controller definitions
+    arm_192_168_48_128_joint_trajectory_controller:
+      type: joint_trajectory_controller/JointTrajectoryController
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+arm_192_168_48_128_joint_trajectory_controller:
+  ros__parameters:
+    use_sim_time: true
+    joints:
+      - arm_192_168_48_128_shoulder_pan_joint
+      - arm_192_168_48_128_shoulder_lift_joint
+      - arm_192_168_48_128_elbow_joint
+      - arm_192_168_48_128_wrist_1_joint
+      - arm_192_168_48_128_wrist_2_joint
+      - arm_192_168_48_128_wrist_3_joint
+    command_interfaces:
+      - position
+    state_interfaces:
+      - position
+      - velocity
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_sim_time: true
+    joints:
+      - arm_192_168_48_128_shoulder_pan_joint
+      - arm_192_168_48_128_shoulder_lift_joint
+      - arm_192_168_48_128_elbow_joint
+      - arm_192_168_48_128_wrist_1_joint
+      - arm_192_168_48_128_wrist_2_joint
+      - arm_192_168_48_128_wrist_3_joint

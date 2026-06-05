@@ -1,0 +1,8 @@
+initial_positions:
+  arm_192_168_48_128:
+    arm_192_168_48_128_shoulder_pan_joint: 0.0
+    arm_192_168_48_128_shoulder_lift_joint: 0.0
+    arm_192_168_48_128_elbow_joint: 0.0
+    arm_192_168_48_128_wrist_1_joint: 0.0
+    arm_192_168_48_128_wrist_2_joint: 0.0
+    arm_192_168_48_128_wrist_3_joint: 0.0

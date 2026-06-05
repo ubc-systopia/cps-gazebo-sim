@@ -752,6 +752,21 @@
                     }
                   }
                 },
+                "initial_orientation": {
+                  "description": "Instance orientation [R, P, Y] in radians. Optional; defaults to 0,0,0. Maps to the roll/pitch/yaw of the generated static_objects pose.",
+                  "type": "object",
+                  "properties": {
+                    "R": {
+                      "type": "number"
+                    },
+                    "P": {
+                      "type": "number"
+                    },
+                    "Y": {
+                      "type": "number"
+                    }
+                  }
+                },
                 "barriers_instances": {
                   "type": "array",
                   "properties": {
@@ -858,6 +873,21 @@
                 "type": "number"
               },
               "z": {
+                "type": "number"
+              }
+            }
+          },
+          "initial_orientation": {
+            "description": "Object orientation [R, P, Y] in radians (roll about X, pitch about Y, yaw about Z). Optional; defaults to 0,0,0. Maps to the roll/pitch/yaw components of the generated static_objects pose so objects can be placed at angles.",
+            "type": "object",
+            "properties": {
+              "R": {
+                "type": "number"
+              },
+              "P": {
+                "type": "number"
+              },
+              "Y": {
                 "type": "number"
               }
             }

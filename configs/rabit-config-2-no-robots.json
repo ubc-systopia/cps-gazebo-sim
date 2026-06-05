@@ -1,0 +1,774 @@
+{
+  "package_name": "rabit_lab",
+  "launch_rviz": false,
+  "robot_arms": [],
+  "action_devices": [
+    {
+      "class_name": "SimulatedSmartDevice",
+      "object_type": "dosing_system",
+      "vial_holders": [
+        {
+          "x": 0.15,
+          "y": 0.45,
+          "z": 0.1
+        }
+      ],
+      "dosing_heads": [
+        {
+          "home_location": {
+            "x": 0.1,
+            "y": 0.2,
+            "z": 0.3
+          },
+          "current_location": {
+            "x": 2.1,
+            "y": 2.2,
+            "z": 2.3
+          },
+          "current_capacity": 100,
+          "shape": {
+            "shape_type": "cuboid",
+            "dimensions": {
+              "length": 1.0,
+              "width": 2.0,
+              "height": 3.0,
+              "radius": 0.0
+            },
+            "orientation": "upright"
+          }
+        }
+      ],
+      "motor_home_position": {
+        "x": 0.2,
+        "y": 0.1,
+        "z": 0.5
+      },
+      "min_action_value": {
+        "dispensing": 0.0
+      },
+      "max_action_value": {
+        "dispensing": 100.0
+      },
+      "barriers": [
+        {
+          "shape": {
+            "shape_type": "cuboid",
+            "dimensions": {
+              "length": 2.0,
+              "width": 3.0,
+              "height": 4.0,
+              "radius": 0.0
+            },
+            "orientation": "upright"
+          },
+          "entrance_permissions": {
+            "192.168.21.1": true,
+            "169.254.200.200": true,
+            "Virtual Dosing Station": false,
+            "COM1": true,
+            "COM2": false,
+            "COM3": false,
+            "solution_vial": true,
+            "grid": false,
+            "dosing system barrier": false,
+            "thermoshaker barrier": false,
+            "stirrer barrier": false,
+            "grid barrier": false
+          },
+          "can_stay": {
+            "192.168.21.1": false,
+            "169.254.200.200": false,
+            "Virtual Dosing Station": false,
+            "COM1": false,
+            "COM2": false,
+            "COM3": false,
+            "solution_vial": true,
+            "grid": false,
+            "dosing system barrier": false,
+            "thermoshaker barrier": false,
+            "stirrer barrier": false,
+            "grid barrier": false
+          },
+          "actions": {
+            "open": [
+              {
+                "command_name": "set_door",
+                "action_check": "lambda x : x['val'] == 'open'"
+              }
+            ],
+            "close": [
+              {
+                "command_name": "set_door",
+                "action_check": "lambda x : x['val'] == 'closed'"
+              }
+            ],
+            "composite_actions": []
+          },
+          "status_commands": {
+            "get_status": {
+              "command_name": "door_state",
+              "set_state_variable": "lambda x : x == 'open'"
+            }
+          }
+        }
+      ],
+      "actions": {
+        "start": {
+          "dispensing": [
+            {
+              "command_name": "run_action",
+              "action_check": "lambda x : True"
+            }
+          ]
+        },
+        "stop": {
+          "dispensing": [
+            {
+              "command_name": "stop_action",
+              "action_check": "lambda x : True"
+            }
+          ]
+        },
+        "change_action_value": {
+          "dispensing": [
+            {
+              "command_name": "run_action",
+              "action_check": "lambda x : 'quantity' in x.keys()",
+              "value": "lambda x : x['quantity']",
+              "min_action_value": 0.0,
+              "max_action_value": 100.0
+            }
+          ]
+        },
+        "composite_actions": [
+          {
+            "command_name": "run_action",
+            "action_check": "lambda x : 'quantity' in x.keys()",
+            "actions": [
+              "change_action_value",
+              "start"
+            ],
+            "action_name": "dispensing"
+          }
+        ]
+      },
+      "status_commands": {
+        "get_key": {
+          "command_name": "name",
+          "set_state_variable": "lambda x : x"
+        },
+        "get_action_value": {
+          "dispensing": {
+            "command_name": "",
+            "set_state_variable": ""
+          }
+        },
+        "get_action_device_status": {
+          "dispensing": {
+            "command_name": "active",
+            "set_state_variable": "lambda x : x == True"
+          }
+        }
+      },
+      "instances": [
+        {
+          "key": "Virtual Dosing Station",
+          "shape": {
+            "shape_type": "cuboid",
+            "dimensions": {
+              "length": 2.0,
+              "width": 3.0,
+              "height": 4.0,
+              "radius": 0.0
+            },
+            "orientation": "upright"
+          },
+          "initial_location": {
+            "x": 2.1,
+            "y": 2.2,
+            "z": 2.14
+          },
+          "barriers_instances": [
+            {
+              "key": "dosing system barrier",
+              "initial_location": {
+                "x": 0.1,
+                "y": 0.2,
+                "z": 0.14
+              },
+              "home_location": {
+                "x": 0.2,
+                "y": 0.4,
+                "z": 0.6
+              },
+              "state_variables": {
+                "status": false
+              }
+            }
+          ],
+          "state_variables": {
+            "action_device_status": {
+              "dispensing": false
+            },
+            "action_value": {
+              "dispensing": 0.0
+            },
+            "motor_position": 0.5
+          }
+        }
+      ]
+    },
+    {
+      "class_name": "DummyThermoshaker",
+      "object_type": "action_device",
+      "vial_holders": [
+        {
+          "x": 0.15,
+          "y": 0.45,
+          "z": 0.1
+        }
+      ],
+      "dosing_heads": [],
+      "motor_home_position": null,
+      "min_action_value": {
+        "shaking": 0.0,
+        "tempering": 0.0
+      },
+      "max_action_value": {
+        "shaking": 100.0,
+        "tempering": 500.0
+      },
+      "barriers": [
+        {
+          "shape": {
+            "shape_type": "cuboid",
+            "dimensions": {
+              "length": 2.0,
+              "width": 3.0,
+              "height": 4.0,
+              "radius": 0.0
+            },
+            "orientation": "upright"
+          },
+          "entrance_permissions": {
+            "192.168.21.1": false,
+            "169.254.200.200": false,
+            "Virtual Dosing Station": false,
+            "COM1": false,
+            "COM2": false,
+            "COM3": false,
+            "solution_vial": true,
+            "grid": false,
+            "dosing system barrier": false,
+            "thermoshaker barrier": false,
+            "stirrer barrier": false,
+            "grid barrier": false
+          },
+          "can_stay": {
+            "192.168.21.1": false,
+            "169.254.200.200": false,
+            "Virtual Dosing Station": false,
+            "COM1": false,
+            "COM2": false,
+            "COM3": false,
+            "solution_vial": true,
+            "grid": false,
+            "dosing system barrier": false,
+            "thermoshaker barrier": false,
+            "stirrer barrier": false,
+            "grid barrier": false
+          },
+          "actions": {
+            "open": [
+              {
+                "command_name": "",
+                "action_check": ""
+              }
+            ],
+            "close": [
+              {
+                "command_name": "",
+                "action_check": ""
+              }
+            ],
+            "composite_actions": []
+          },
+          "status_commands": {
+            "get_status": {
+              "command_name": "",
+              "set_state_variable": ""
+            }
+          }
+        }
+      ],
+      "actions": {
+        "start": {
+          "shaking": [
+            {
+              "command_name": "start_shaking",
+              "action_check": "lambda x : True"
+            }
+          ],
+          "tempering": [
+            {
+              "command_name": "start_tempering",
+              "action_check": "lambda x : True"
+            }
+          ]
+        },
+        "stop": {
+          "shaking": [
+            {
+              "command_name": "stop_shaking",
+              "action_check": "lambda x : True"
+            }
+          ],
+          "tempering": [
+            {
+              "command_name": "stop_tempering",
+              "action_check": "lambda x : True"
+            }
+          ]
+        },
+        "change_action_value": {
+          "shaking": [
+            {
+              "command_name": "set_speed",
+              "action_check": "lambda x : True",
+              "value": "lambda x : x['value']"
+            }
+          ],
+          "tempering": [
+            {
+              "command_name": "set_temperature",
+              "action_check": "lambda x : True",
+              "value": "lambda x : x['value']"
+            }
+          ]
+        },
+        "composite_actions": []
+      },
+      "status_commands": {
+        "get_key": {
+          "command_name": "port",
+          "set_state_variable": "lambda x : x"
+        },
+        "get_action_value": {
+          "shaking": {
+            "command_name": "speed",
+            "set_state_variable": "lambda x : x"
+          },
+          "tempering": {
+            "command_name": "temperature",
+            "set_state_variable": "lambda x : x"
+          }
+        },
+        "get_action_device_status": {
+          "shaking": {
+            "command_name": "_shaking",
+            "set_state_variable": "lambda x : x == True"
+          },
+          "tempering": {
+            "command_name": "_tempering",
+            "set_state_variable": "lambda x : x == True"
+          }
+        }
+      },
+      "instances": [
+        {
+          "key": "COM8",
+          "shape": {
+            "shape_type": "cuboid",
+            "dimensions": {
+              "length": 2.0,
+              "width": 3.0,
+              "height": 1.0,
+              "radius": 0.0
+            },
+            "orientation": "upright"
+          },
+          "initial_location": {
+            "x": 0.2,
+            "y": 0.4,
+            "z": 0.5
+          },
+          "barriers_instances": [
+            {
+              "key": "thermoshaker barrier",
+              "initial_location": {
+                "x": 0.2,
+                "y": 0.4,
+                "z": 0.6
+              },
+              "home_location": {
+                "x": 0.2,
+                "y": 0.4,
+                "z": 0.6
+              },
+              "state_variables": {
+                "status": false
+              }
+            }
+          ],
+          "state_variables": {
+            "action_device_status": {
+              "shaking": false,
+              "tempering": false
+            },
+            "action_value": {
+              "shaking": 0.0,
+              "tempering": 2.0
+            },
+            "motor_position": null
+          }
+        }
+      ]
+    },
+    {
+      "class_name": "MockMagneticStirrer",
+      "object_type": "action_device",
+      "vial_holders": [
+        {
+          "x": 0.15,
+          "y": 0.45,
+          "z": 0.1
+        }
+      ],
+      "dosing_heads": [],
+      "motor_home_position": null,
+      "min_action_value": {
+        "stirring": 0.0,
+        "heating": 0.0
+      },
+      "max_action_value": {
+        "stirring": 500.0,
+        "heating": 500.0
+      },
+      "barriers": [
+        {
+          "shape": {
+            "shape_type": "cuboid",
+            "dimensions": {
+              "length": 2.0,
+              "width": 3.0,
+              "height": 4.0,
+              "radius": 0.0
+            },
+            "orientation": "upright"
+          },
+          "entrance_permissions": {
+            "192.168.21.1": false,
+            "169.254.200.200": false,
+            "Virtual Dosing Station": false,
+            "COM1": false,
+            "COM2": false,
+            "COM3": false,
+            "solution_vial": true,
+            "grid": false
+          },
+          "can_stay": {
+            "192.168.21.1": false,
+            "169.254.200.200": false,
+            "Virtual Dosing Station": false,
+            "COM1": false,
+            "COM2": false,
+            "COM3": false,
+            "solution_vial": true,
+            "grid": false
+          },
+          "actions": {
+            "open": [
+              {
+                "command_name": "",
+                "action_check": ""
+              }
+            ],
+            "close": [
+              {
+                "command_name": "",
+                "action_check": ""
+              }
+            ],
+            "composite_actions": []
+          },
+          "status_commands": {
+            "get_status": {
+              "command_name": "",
+              "set_state_variable": ""
+            }
+          }
+        }
+      ],
+      "actions": {
+        "start": {
+          "stirring": [
+            {
+              "command_name": "start_stirring",
+              "action_check": "lambda x : True"
+            }
+          ],
+          "heating": [
+            {
+              "command_name": "start_heating",
+              "action_check": "lambda x : True"
+            }
+          ]
+        },
+        "stop": {
+          "stirring": [
+            {
+              "command_name": "stop_stirring",
+              "action_check": "lambda x : True"
+            }
+          ],
+          "heating": [
+            {
+              "command_name": "stop_heating",
+              "action_check": "lambda x : True"
+            }
+          ]
+        },
+        "change_action_value": {
+          "stirring": [
+            {
+              "command_name": "set_speed_value",
+              "action_check": "lambda x : True",
+              "value": "lambda x : x['value']"
+            }
+          ],
+          "heating": [
+            {
+              "command_name": "set_temperature_value",
+              "action_check": "lambda x : True",
+              "value": "lambda x : x['value']"
+            }
+          ]
+        },
+        "composite_actions": []
+      },
+      "status_commands": {
+        "get_key": {
+          "command_name": "_device_port",
+          "set_state_variable": "lambda x : x"
+        },
+        "get_action_value": {
+          "stirring": {
+            "command_name": "target_stir_rate",
+            "set_state_variable": "lambda x : x"
+          },
+          "heating": {
+            "command_name": "target_temperature",
+            "set_state_variable": "lambda x : x"
+          }
+        },
+        "get_action_device_status": {
+          "stirring": {
+            "command_name": "stirring",
+            "set_state_variable": "lambda x : x == True"
+          },
+          "heating": {
+            "command_name": "heating",
+            "set_state_variable": "lambda x : x == True"
+          }
+        }
+      },
+      "instances": [
+        {
+          "key": "COM3",
+          "shape": {
+            "shape_type": "cuboid",
+            "dimensions": {
+              "length": 2.0,
+              "width": 3.0,
+              "height": 4.0,
+              "radius": 0.0
+            },
+            "orientation": "upright"
+          },
+          "initial_location": {
+            "x": 0.3,
+            "y": 0.4,
+            "z": 0.6
+          },
+          "barriers_instances": [
+            {
+              "key": "stirrer barrier",
+              "initial_location": {
+                "x": 0.3,
+                "y": 0.4,
+                "z": 0.6
+              },
+              "home_location": {
+                "x": 0.2,
+                "y": 0.4,
+                "z": 0.6
+              },
+              "state_variables": {
+                "status": false
+              }
+            }
+          ],
+          "state_variables": {
+            "action_device_status": {
+              "stirring": false,
+              "heating": false
+            },
+            "action_value": {
+              "stirring": 100.0,
+              "heating": 25.0
+            },
+            "motor_position": null
+          }
+        }
+      ]
+    }
+  ],
+  "passive_objects": [
+    {
+      "key": "solution_vial",
+      "volume": 100,
+      "initial_location": {
+        "x": 0.15,
+        "y": 0.45,
+        "z": 0.1
+      },
+      "object_type": "vial",
+      "shape": {
+        "shape_type": "cylinder",
+        "dimensions": {
+          "length": 0.0,
+          "width": 0.0,
+          "height": 2.0,
+          "radius": 0.3
+        },
+        "orientation": "upright"
+      },
+      "vial_holders": [],
+      "barriers": [],
+      "state_variables": {
+        "current_volume": 0.0
+      }
+    },
+    {
+      "key": "grid",
+      "volume": 15,
+      "initial_location": {
+        "x": 0.5,
+        "y": 0.4,
+        "z": 0.7
+      },
+      "object_type": "grid",
+      "shape": {
+        "shape_type": "cuboid",
+        "dimensions": {
+          "length": 4.0,
+          "width": 2.0,
+          "height": 1.0,
+          "radius": 0.0
+        },
+        "orientation": "upright"
+      },
+      "vial_holders": [
+        {
+          "x": 0.5,
+          "y": 0.4,
+          "z": 0.7
+        }
+      ],
+      "barriers": [
+        {
+          "key": "grid barrier",
+          "shape": {
+            "shape_type": "cuboid",
+            "dimensions": {
+              "length": 4.0,
+              "width": 2.0,
+              "height": 1.0,
+              "radius": 0.0
+            },
+            "orientation": "upright"
+          },
+          "initial_location": {
+            "x": 0.5,
+            "y": 0.4,
+            "z": 0.7
+          },
+          "entrance_permissions": {
+            "192.168.21.1": false,
+            "169.254.200.200": false,
+            "Virtual Dosing Station": false,
+            "COM2": false,
+            "COM1": false,
+            "COM3": false,
+            "solution_vial": true,
+            "grid": false,
+            "dosing system barrier": false,
+            "thermoshaker barrier": false,
+            "stirrer barrier": false,
+            "grid barrier": false
+          },
+          "can_stay": {
+            "192.168.21.1": false,
+            "169.254.200.200": false,
+            "Virtual Dosing Station": false,
+            "COM1": false,
+            "COM2": false,
+            "COM3": false,
+            "solution_vial": true,
+            "grid": false,
+            "dosing system barrier": false,
+            "thermoshaker barrier": false,
+            "stirrer barrier": false,
+            "grid barrier": false
+          },
+          "state_variables": {
+            "status": false
+          },
+          "actions": {
+            "open": [
+              {
+                "command_name": "",
+                "action_check": ""
+              }
+            ],
+            "close": [
+              {
+                "command_name": "",
+                "action_check": ""
+              }
+            ],
+            "composite_actions": []
+          },
+          "status_commands": {
+            "get_status": {
+              "command_name": "",
+              "set_state_variable": ""
+            }
+          }
+        }
+      ],
+      "state_variables": {
+        "current_volume": 15
+      }
+    }
+  ],
+  "environment": {
+    "boundary_coords": {
+      "x": 4.0,
+      "y": 2.0,
+      "z": 6.0
+    },
+    "boundary_shape": {
+      "shape_type": "cuboid",
+      "dimensions": {
+        "length": 10.4,
+        "width": 5.3,
+        "height": 1.0,
+        "radius": 0.0
+      },
+      "orientation": ""
+    },
+    "walls_coords": [],
+    "walls_shapes": []
+  }
+}

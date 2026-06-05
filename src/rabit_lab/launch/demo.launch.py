@@ -1,21 +1,3 @@
-#!/bin/bash
-# Usage: generate_demo_launch.sh <package_name> <pkg_dir>
-
-set -euo pipefail
-
-if [ $# -lt 2 ]; then
-  echo "Usage: $0 <package_name> <pkg_dir>" >&2
-  exit 1
-fi
-
-PACKAGE_NAME="$1"
-PKG_DIR="$2"
-
-LAUNCH_PATH="${PKG_DIR}/launch/demo.launch.py"
-mkdir -p "${PKG_DIR}/launch"
-
-
-cat > "$LAUNCH_PATH" << PY
 #!/usr/bin/env python3
 import os
 import json
@@ -63,7 +45,7 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     moveit_cfg = (
-        MoveItConfigsBuilder("${PACKAGE_NAME}", package_name='${PACKAGE_NAME}')
+        MoveItConfigsBuilder("rabit_lab", package_name='rabit_lab')
         .to_moveit_configs()
     )
 
@@ -74,7 +56,7 @@ def generate_launch_description():
     # Use the main package Xacro to provide robot_description (avoids nested <robot> from wrapper)
     robot_xacro_cmd = Command([
         FindExecutable(name='xacro'), ' ',
-        PathJoinSubstitution([FindPackageShare('${PACKAGE_NAME}'), 'urdf', '${PACKAGE_NAME}.urdf.xacro'])
+        PathJoinSubstitution([FindPackageShare('rabit_lab'), 'urdf', 'rabit_lab.urdf.xacro'])
     ])
     moveit_cfg.robot_description['robot_description'] = ParameterValue(robot_xacro_cmd, value_type=str)
 
@@ -84,7 +66,7 @@ def generate_launch_description():
     #### 2. Ignition Gazebo server + optional GUI
     ros_gz_sim_share = get_package_share_directory("ros_gz_sim")
     # Use the generated world (with static objects) if it exists, else empty.sdf.
-    _world = os.path.join(get_package_share_directory("${PACKAGE_NAME}"), "config", "world.sdf")
+    _world = os.path.join(get_package_share_directory("rabit_lab"), "config", "world.sdf")
     _gz_world = _world if os.path.exists(_world) else "empty.sdf"
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -102,7 +84,7 @@ def generate_launch_description():
         output="screen",
         arguments=[
             "-topic", "/robot_description",
-            "-name",  "${PACKAGE_NAME}",
+            "-name",  "rabit_lab",
             "-allow_renaming", "true",
             "-x", "0", "-y", "0", "-z", "0.0",
         ],
@@ -114,8 +96,8 @@ def generate_launch_description():
         name="rviz2",
         output="screen",
         arguments=["-d", os.path.join(
-            get_package_share_directory("${PACKAGE_NAME}"),
-            "config", "${PACKAGE_NAME}.rviz"
+            get_package_share_directory("rabit_lab"),
+            "config", "rabit_lab.rviz"
         )],
         parameters=[
             moveit_cfg.robot_description,
@@ -138,7 +120,7 @@ def generate_launch_description():
     working_controller_manager = "controller_manager"
 
     # Build spawners for each robot found in robots.json, plus joint_state_broadcaster
-    pkg_share = get_package_share_directory('${PACKAGE_NAME}')
+    pkg_share = get_package_share_directory('rabit_lab')
     robot_names = _read_robot_names(pkg_share)
     launch_rviz = _read_launch_rviz(pkg_share)
 
@@ -161,7 +143,7 @@ def generate_launch_description():
     #### service is up; the node itself also waits on the service.
     has_static = bool(_read_static_objects(pkg_share))
     scene_publisher = Node(
-        package="${PACKAGE_NAME}",
+        package="rabit_lab",
         executable="scene_publisher.py",
         output="screen",
         parameters=[{"use_sim_time": use_sim_time}],
@@ -181,7 +163,3 @@ def generate_launch_description():
     if has_static:
         ld_entries.append(delayed_scene)
     return LaunchDescription(ld_entries)
-PY
-
-chmod +x "$LAUNCH_PATH"
-echo "Wrote ${LAUNCH_PATH}"

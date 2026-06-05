@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="multi_arm">
+  <!-- declare arguments -->
+  <xacro:arg name="arm_192_168_48_128_ur_type" default="ur3"/>
+  <xacro:arg name="arm_192_168_48_128_x" default="0.0"/>
+  <xacro:arg name="arm_192_168_48_128_y" default="0.0"/>
+  <xacro:arg name="arm_192_168_48_128_z" default="0.0"/>
+  <xacro:arg name="arm_192_168_48_128_R" default="0.0"/>
+  <xacro:arg name="arm_192_168_48_128_P" default="0.0"/>
+  <xacro:arg name="arm_192_168_48_128_Y" default="0.0"/>
+
+  <!-- world reference frame -->
+  <link name="world"/>
+
+  <!-- include the core URDF macro definitions -->
+  <xacro:include filename="$(find multi_ur_description)/urdf/ur_macro.xacro"/>
+
+  <!-- Unified ros2_control for all arms (Ignition simulation) -->
+  <ros2_control name="multi_arm_controller_manager" type="system">
+    <hardware>
+      <plugin>ign_ros2_control/IgnitionSystem</plugin>
+    </hardware>
+    <!-- arm_192_168_48_128 joints -->
+    <joint name="arm_192_168_48_128_shoulder_pan_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm_192_168_48_128_shoulder_lift_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm_192_168_48_128_elbow_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm_192_168_48_128_wrist_1_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm_192_168_48_128_wrist_2_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+    <joint name="arm_192_168_48_128_wrist_3_joint">
+      <command_interface name="position"/>
+      <command_interface name="velocity"/>
+      <state_interface name="position"><param name="initial_value">0.0</param></state_interface>
+      <state_interface name="velocity"/>
+      <state_interface name="effort"/>
+    </joint>
+  </ros2_control>
+
+  <!-- arm_192_168_48_128 kinematic chain WITHOUT internal ros2_control -->
+  <xacro:ur_robot
+    name="arm_192_168_48_128"
+    tf_prefix="arm_192_168_48_128_"
+    parent="world"
+    joint_limits_parameters_file="$(find multi_ur_description)/config/$(arg arm_192_168_48_128_ur_type)/joint_limits.yaml"
+    kinematics_parameters_file="$(find multi_ur_description)/config/$(arg arm_192_168_48_128_ur_type)/default_kinematics.yaml"
+    physical_parameters_file="$(find multi_ur_description)/config/$(arg arm_192_168_48_128_ur_type)/physical_parameters.yaml"
+    visual_parameters_file="$(find multi_ur_description)/config/$(arg arm_192_168_48_128_ur_type)/visual_parameters.yaml"
+    generate_ros2_control_tag="false"
+    sim_gazebo="false"
+    sim_ignition="true">
+    <origin xyz="$(arg arm_192_168_48_128_x) $(arg arm_192_168_48_128_y) $(arg arm_192_168_48_128_z)" rpy="$(arg arm_192_168_48_128_R) $(arg arm_192_168_48_128_P) $(arg arm_192_168_48_128_Y)"/>
+  </xacro:ur_robot>
+
+  <gazebo>
+    <plugin filename="libign_ros2_control-system.so" name="ign_ros2_control::IgnitionROS2ControlPlugin">
+      <parameters>$(find rabit_lab)/config/controllers.yaml</parameters>
+    </plugin>
+  </gazebo>
+
+</robot>
