@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8'?>
+<sdf version="1.8">
+  <model name="beaker">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <geometry><mesh><uri>meshes/beaker.obj</uri><scale>0.018 0.018 0.018</scale></mesh></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><mesh><uri>meshes/beaker.obj</uri><scale>0.018 0.018 0.018</scale></mesh></geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
