@@ -1,4 +1,4 @@
-## ROS Package Generation Scripts Architecture
+# ROS Package Generation Scripts Architecture
 
 This file outlines the structure and purpose of each script used for automating ROS package generation in the workspace.
 
@@ -18,6 +18,7 @@ scripts/
 │   ├── generate_kinematics.sh
 │   ├── generate_launch_script.sh
 │   ├── generate_moveit_controllers.sh
+│   ├── generate_ompl_planning.sh
 │   ├── generate_package_xml.sh
 │   ├── generate_pilz_cartesian_limits.sh
 │   ├── generate_pkg_xacro.sh
@@ -26,15 +27,17 @@ scripts/
 │   ├── generate_robots_json.sh
 │   ├── generate_ros2_control_xacro.sh
 │   ├── generate_rviz_config.sh
+│   ├── generate_scene_publisher.sh
 │   ├── generate_sensors_3d.sh
 │   ├── generate_srdf.sh
 │   ├── generate_static_robot_description.sh
-│   └── robot_description_template.xacro
+│   ├── generate_workflow_demo.sh
+│   └── generate_world_sdf.sh
 ```
 
 ---
 
-### Script Summaries
+## Script Summaries
 
 **create-ros-pkg**  
 Main entrypoint for package generation. Interactively collects robot configuration (number, type, positions, orientations, joint values) and calls helper scripts to generate all necessary files for a new ROS package supporting n robots.
@@ -51,7 +54,7 @@ Launches a MoveIt-enabled demo for multiple robots, sourcing the workspace and R
 **multiple-robots-with-controllers-no-moveit**  
 Launches a demo for multiple robots with controllers, but without MoveIt, sourcing the workspace and ROS environment.
 
-### helpers/
+## helpers/
 
 **generate_cmakelists.sh**  
 Generates a CMakeLists.txt for the package, including installation rules for launch, config, and urdf folders.
@@ -77,6 +80,9 @@ Generates a launch script in the scripts/ folder to build and launch the new pac
 **generate_moveit_controllers.sh**  
 Creates moveit_controllers.yaml, mapping each robot's controller to the MoveIt FollowJointTrajectory interface.
 
+**generate_ompl_planning.sh**  
+Creates ompl_planning.yaml with one planning-group block per arm (plus an `all_arms` group when there are two or more), matching the SRDF groups. Uses a finer `longest_valid_segment_fraction` than MoveIt's default so path simplification can't shortcut a link through a static collision object; `planner_configs` is omitted so MoveIt merges in its default planners (RRTConnect, …).
+
 **generate_package_xml.sh**  
 Generates package.xml, listing dependencies and metadata for the new package.
 
@@ -101,6 +107,9 @@ Generates a ros2_control Xacro macro for all robots, loading initial positions a
 **generate_rviz_config.sh**  
 Creates an RViz configuration file for visualizing all robots in the simulation.
 
+**generate_scene_publisher.sh**  
+Emits `scripts/scene_publisher.py`, a launch-time node that reads the package's `config/robots.json` `static_objects` and adds them to the MoveIt planning scene (via `/apply_planning_scene`) as collision objects, so the arms plan around them. Installed to `lib/<pkg>` and launched (delayed) by `demo.launch.py` when static objects are present.
+
 **generate_sensors_3d.sh**  
 Creates sensors_3d.yaml, configuring 3D sensors for the simulation.
 
@@ -110,7 +119,9 @@ Generates a Semantic Robot Description Format (SRDF) file for MoveIt, defining p
 **generate_static_robot_description.sh**  
 Renders a static URDF from the generated robot_description_template.xacro using xacro or ROS 2 tools.
 
-**robot_description_template.xacro**  
-Template Xacro file used as a base for generating robot URDFs.
-# ROS Package Generation Scripts Architecture
+**generate_workflow_demo.sh**  
+Emits a thin `scripts/workflow_demo.py` that drives the package via the shared `multi_arm_control` library. All control logic lives in the library; this file is just task choreography and discovers the arms from the package's `robots.json`.
+
+**generate_world_sdf.sh**  
+Reads `config/robots.json` and, if it has a non-empty `static_objects` array, renders `config/world.sdf` (the standard empty world plus one static `<model>` per object). If there are no static objects, any stale `world.sdf` is removed so the package falls back to launching `empty.sdf`.
 

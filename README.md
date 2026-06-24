@@ -15,39 +15,40 @@
 - CMake version >= 3.5
 - Python 3.10
 
+The stack this project is built and run against:
+- [ROS 2 Humble Hawksbill](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html)
+- [Gazebo Fortress (Ignition)](https://gazebosim.org/docs/fortress/install_ubuntu) + the [`ros-gz`](https://github.com/gazebosim/ros_gz) bridge
+- [MoveIt 2](https://moveit.ros.org/install-moveit2/binary/), `ros2_control` and `gz_ros2_control`
+
 ## Installation
-1. Navigate to the root directory
-2. Run `scripts/setup.sh`
----
+From the repository root, run:
 
-1. [ROS2 Humble Hawksbill](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html)
-    > For convenience, add the following line to *.bashrc*. Other possible values are setup.sh, setup.zsh
-    >```bash
-    >source /opt/ros/humble/setup.bash
-    >```
-
-2. Dependencies:
-    ```bash
-    cd ~/cps-gazebo-sim
-    source /opt/ros/humble/setup.bash
-    sudo rosdep init
-    rosdep update
-    rosdep install --from-paths src --ignore-src -r -i -y --rosdistro humble
-    ```
-
-3. [Gazebo Fortress](https://gazebosim.org/docs/fortress/install_ubuntu)
-4. `ros-gz` package which includes the necessary bridges and interfaces between ROS2 Humble and Gazebo Fortress
-    ```bash
-    sudo apt-get install ros-humble-ros-gz
-    ```
-5. Install Interbotix robot packages
-https://docs.trossenrobotics.com/interbotix_xsarms_docs/ros_interface/ros2/software_setup.html#amd64-architecture
-(instead of 6. maybe edit the github source links for repos that I modified. in the xsarm_amd64_install.sh script)
-6. Update sources by running (*insert my script which updates remote urls to my customized repos*)
-
-7. [MoveIt2](https://moveit.ros.org/install-moveit2/binary/)
 ```bash
-sudo apt install ros-humble-moveit
+scripts/setup.sh
+```
+
+This single script is idempotent and brings a fresh Ubuntu 22.04 machine to the
+exact environment used here: it installs ROS 2 Humble (desktop + dev tools),
+Gazebo Fortress, `ros-gz`, MoveIt 2, the `ros2_control`/`gz_ros2_control`
+controllers, the Python tooling the `scripts/` commands need, resolves all
+workspace dependencies with `rosdep`, and runs a full `colcon build`. Re-run it
+any time after pulling new changes.
+
+When it finishes, source ROS and the local overlay in each new shell (add the
+first line to your `~/.bashrc` for convenience):
+
+```bash
+source /opt/ros/humble/setup.bash
+source install/setup.bash
+```
+
+### Contributing (dev tooling)
+If you plan to contribute, install the pre-commit hooks (lint/format) that run on
+each commit:
+
+```bash
+pip install -r requirements.dev.txt
+pre-commit install
 ```
 
 ## Documentation

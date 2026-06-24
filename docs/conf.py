@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "CPS Multiple Robot Gazebo Sim"
+project = "CPS SDL Simulator"
 copyright = "2025, Roman Sinkus, Iris Xu"
 author = "Roman Sinkus, Iris Xu"
 release = "dev"

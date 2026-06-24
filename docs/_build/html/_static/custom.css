@@ -5,10 +5,16 @@ div.sphinxsidebarwrapper .toctree-l1.current > a {
     font-weight: bold;
     border-radius: 4px;
 }
-/* Add spacing and a subtle border between sidebar links */
+/* Add spacing and a border between sidebar links */
 div.sphinxsidebarwrapper a {
     display: block;
     margin-bottom: 12px;
     padding-bottom: 4px;
-    border-bottom: 1px solid #ddd;
+    border-bottom: 2px solid #999 !important;
+    transform-origin: left center;
+    transition: transform 0.15s ease;
+}
+/* Grow the link text on hover */
+div.sphinxsidebarwrapper a:hover {
+    transform: scale(1.05);
 }

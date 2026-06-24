@@ -1,0 +1,59 @@
+#!/bin/bash
+# serve-docs - Build the Sphinx documentation and serve it locally.
+#
+# Usage:
+#   scripts/serve-docs [--port N] [--build-only] [--open]
+#
+#   --port N      port to serve on (default: 8000)
+#   --build-only  build the HTML and exit (don't start a server)
+#   --open        open the built docs in the default browser
+#
+# Output is written to docs/_build/html. The server runs in the foreground;
+# press Ctrl-C to stop it.
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+DOCS="${ROOT}/docs"
+HTML="${DOCS}/_build/html"
+
+PORT=8000
+BUILD_ONLY=0
+OPEN=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --port) PORT="$2"; shift 2 ;;
+    --port=*) PORT="${1#*=}"; shift ;;
+    --build-only) BUILD_ONLY=1; shift ;;
+    --open) OPEN=1; shift ;;
+    -h|--help) sed -n '2,12p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "Unknown arg: $1" >&2; exit 2 ;;
+  esac
+done
+
+if ! python3 -c "import sphinx" >/dev/null 2>&1; then
+  echo "[serve-docs] Sphinx not found. Install the docs requirements first:"
+  echo "    pip install -r ${DOCS}/requirements.txt"
+  exit 1
+fi
+
+echo "[serve-docs] Building docs..."
+make -C "${DOCS}" html
+
+if [ ! -f "${HTML}/index.html" ]; then
+  echo "[serve-docs] Build did not produce ${HTML}/index.html" >&2
+  exit 1
+fi
+
+if [ "$OPEN" = "1" ] && command -v xdg-open >/dev/null 2>&1; then
+  xdg-open "${HTML}/index.html" >/dev/null 2>&1 || true
+fi
+
+if [ "$BUILD_ONLY" = "1" ]; then
+  echo "[serve-docs] Built: ${HTML}/index.html"
+  exit 0
+fi
+
+echo "[serve-docs] Serving at http://localhost:${PORT}  (Ctrl-C to stop)"
+exec python3 -m http.server -d "${HTML}" "${PORT}"
