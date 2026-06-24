@@ -42,12 +42,24 @@ cat > "$OUT_FILE" << EOF
   <exec_depend>moveit_setup_assistant</exec_depend>
   <exec_depend>multi_ur_description</exec_depend>
   <exec_depend>multi_arm_control</exec_depend>
+  <!-- static_object models (include/mesh URIs) are resolved from this package at runtime -->
+  <exec_depend>multi_arm_lab_sim_description</exec_depend>
   <exec_depend>pick_ik</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
   <exec_depend>rviz2</exec_depend>
   <exec_depend>rviz_common</exec_depend>
   <exec_depend>rviz_default_plugins</exec_depend>
   <exec_depend>warehouse_ros_mongo</exec_depend>
+  <exec_depend>urdf</exec_depend>
+  <!-- runtime deps for the generated scene_publisher.py / workflow_demo.py -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>moveit_msgs</exec_depend>
+  <exec_depend>shape_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
 
   <export>
       <build_type>ament_cmake</build_type>

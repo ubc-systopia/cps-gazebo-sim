@@ -93,14 +93,21 @@ def geometry_xml(obj):
         return f"<cylinder><radius>{c['radius']}</radius><length>{c['length']}</length></cylinder>"
     if "sphere" in obj:
         return f"<sphere><radius>{obj['sphere']['radius']}</radius></sphere>"
+    if "mesh" in obj:
+        s = obj.get("scale", 1.0)
+        s = (s, s, s) if isinstance(s, (int, float)) else s
+        return f"<mesh><uri>{obj['mesh']}</uri><scale>{s[0]} {s[1]} {s[2]}</scale></mesh>"
     return None
 
 def model_xml(obj):
     name = obj["name"]
     p = obj["pose"]
     pose = f"{p[0]} {p[1]} {p[2]} {p[3]} {p[4]} {p[5]}"
-    # Reusable model reference (package:// URI).
-    if "include" in obj and geometry_xml(obj) is None:
+    # Reusable model reference (model:// or package:// URI). Preferred over a bare
+    # mesh for Gazebo so the model's own materials/textures load and it renders
+    # solid. A sibling "mesh" field, if present, is ignored here and used only for
+    # the MoveIt collision object (see scene_publisher.py).
+    if "include" in obj:
         return (f'    <model name="{name}">\n'
                 f'      <static>true</static>\n'
                 f'      <pose>{pose}</pose>\n'
