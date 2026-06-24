@@ -72,14 +72,13 @@ def geometry_from_shape(shape):
     return None  # hemisphere / pyramid have no static_objects equivalent
 
 
-def _make_static_object(name_key, shape, loc, ori, used, what):
-    """Build one static_object dict, or None if the shape is unsupported."""
-    geo = geometry_from_shape(shape or {})
-    if geo is None:
-        sys.stderr.write(
-            f"[WARN] skipping {what} {name_key!r}: "
-            f"unsupported shape_type {(shape or {}).get('shape_type')!r}\n")
-        return None
+def _make_static_object(name_key, shape, loc, ori, used, what, model=None):
+    """Build one static_object dict, or None if there's no usable geometry.
+
+    A `model` reference (include/mesh/scale) takes precedence over the primitive
+    `shape`: the object renders the model in Gazebo (include) and/or uses its mesh
+    for MoveIt collision. If neither a model nor a supported shape is present the
+    object is skipped."""
     loc = loc or {}
     ori = ori or {}
     obj = {
@@ -89,6 +88,21 @@ def _make_static_object(name_key, shape, loc, ori, used, what):
             float(ori.get("R", 0.0)), float(ori.get("P", 0.0)), float(ori.get("Y", 0.0)),
         ],
     }
+    model = model or {}
+    if model.get("include") or model.get("mesh"):
+        if model.get("include"):
+            obj["include"] = model["include"]
+        if model.get("mesh"):
+            obj["mesh"] = model["mesh"]
+        if model.get("scale") is not None:
+            obj["scale"] = model["scale"]
+        return obj
+    geo = geometry_from_shape(shape or {})
+    if geo is None:
+        sys.stderr.write(
+            f"[WARN] skipping {what} {name_key!r}: "
+            f"unsupported shape_type {(shape or {}).get('shape_type')!r} and no model reference\n")
+        return None
     obj.update(geo)
     return obj
 
@@ -99,7 +113,7 @@ def translate_passive_objects(src, used):
     for po in src.get("passive_objects", []):
         obj = _make_static_object(po.get("key", "object"), po.get("shape"),
                                   po.get("initial_location"), po.get("initial_orientation"),
-                                  used, "passive_object")
+                                  used, "passive_object", po.get("model"))
         if obj is not None:
             objects.append(obj)
     return objects
@@ -112,7 +126,7 @@ def translate_action_devices(src, used):
         for inst in dev.get("instances", []):
             obj = _make_static_object(inst.get("key", "device"), inst.get("shape"),
                                       inst.get("initial_location"), inst.get("initial_orientation"),
-                                      used, "action_device instance")
+                                      used, "action_device instance", inst.get("model"))
             if obj is not None:
                 objects.append(obj)
     return objects
@@ -140,6 +154,10 @@ def translate(src):
         "package_name": src["package_name"],
         "launch_rviz": bool(src.get("launch_rviz", True)),
     }
+    # Pass through optional MoveIt ground-plane controls if present.
+    for k in ("avoid_ground", "ground_level"):
+        if k in src:
+            out[k] = src[k]
 
     # Static world objects from SDL passive_objects, action_devices and walls.
     # They share one name namespace (separate from arm keys) so names stay unique.

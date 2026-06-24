@@ -1,0 +1,517 @@
+#!/usr/bin/env python3
+"""add-model - Install a 3D model into the simulation and print a ready-to-paste
+static_objects snippet (with include + mesh + a resting pose).
+
+Three-way auto-detect on the single argument:
+  * a Gazebo Fuel URL          -> downloaded via `gz fuel download` (or `ign`)
+  * a local model directory     -> a folder containing model.sdf/model.config, copied as-is
+  * a local mesh file           -> a bare .stl/.dae/.obj/.ply, copied + wrapped in a
+                                    minimal model.sdf so Gazebo renders it solid
+
+In every case the model lands in
+  src/multi_arm_lab_sim_description/models/<name>/
+and the script measures the mesh (applying the Collada <unit> for .dae) to compute
+the size and the Z that rests the object on the floor.
+
+Usage:
+    scripts/add-model <fuel-url | model-dir | mesh-file> [--name NAME]
+                      [--into CONFIG.json | --rabit-into RABIT.json --attach-to KEY]
+                      [--scale F] [--models-dir DIR]
+
+By default the snippet is printed. With --into it is appended to a flat config's
+static_objects. With --rabit-into it is attached as a "model" block to the
+passive_object / action-device instance named by --attach-to in a RABIT config.
+
+Examples:
+    scripts/add-model "https://fuel.gazebosim.org/1.0/OpenRobotics/models/Table"
+    scripts/add-model ~/Downloads/beaker_model/
+    scripts/add-model ~/Downloads/flask.stl --name flask
+    scripts/add-model ~/Downloads/beaker.glb --rabit-into configs/examples/rabit-schema/lab.json \
+                      --attach-to solution_vial
+"""
+
+import argparse
+import glob
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+
+MESH_EXTS = (".stl", ".dae", ".obj", ".ply", ".fbx", ".glb", ".gltf")
+
+# scripts/add-model -> workspace root is the parent of scripts/
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+WORKSPACE_ROOT = os.path.dirname(SCRIPT_DIR)
+DEFAULT_MODELS_DIR = os.path.join(
+    WORKSPACE_ROOT, "src", "multi_arm_lab_sim_description", "models"
+)
+
+
+def info(msg):
+    print(f"[add-model] {msg}")
+
+
+def die(msg, code=1):
+    print(f"[add-model] ERROR: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def slugify(name):
+    """Lowercase, keep [a-z0-9_], collapse the rest to underscores."""
+    s = re.sub(r"[^a-z0-9]+", "_", name.strip().lower()).strip("_")
+    return s or "model"
+
+
+# --------------------------------------------------------------------------- #
+# Source detection + install
+# --------------------------------------------------------------------------- #
+def detect_source(arg):
+    if arg.startswith("http://") or arg.startswith("https://") or "fuel.gazebosim" in arg:
+        return "fuel"
+    if os.path.isdir(arg):
+        return "model_dir"
+    if os.path.isfile(arg) and arg.lower().endswith(MESH_EXTS):
+        return "mesh"
+    die(f"don't know how to handle '{arg}'. Pass a Fuel URL, a model folder, "
+        f"or a mesh file ({', '.join(MESH_EXTS)}).")
+
+
+def fuel_cli():
+    """Return the CLI whose `fuel download` subcommand actually works.
+
+    Gazebo Fortress ships `ign fuel`; newer releases ship `gz fuel`. A bare `gz`
+    may exist without the fuel plugin, so we validate by checking the subcommand's
+    help mentions a resource URL rather than just trusting that the binary exists."""
+    for cli in ("ign", "gz"):
+        if not shutil.which(cli):
+            continue
+        h = subprocess.run([cli, "fuel", "download", "--help"],
+                           capture_output=True, text=True)
+        if "url" in (h.stdout + h.stderr).lower():
+            return cli
+    return None
+
+
+def install_fuel(url, models_dir, name_override):
+    cli = fuel_cli()
+    if not cli:
+        die("no working 'fuel download' command found (tried 'ign' and 'gz'). "
+            "Download the model manually and pass its folder instead.")
+    info(f"downloading from Fuel via '{cli} fuel download' ...")
+    r = subprocess.run([cli, "fuel", "download", "-u", url, "-t", "model"],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        die(f"fuel download failed:\n{r.stdout}\n{r.stderr}")
+
+    fuel_name = url.rstrip("/").split("/")[-1]
+    src = _find_fuel_model_dir(fuel_name)
+    if not src:
+        die(f"download succeeded but couldn't locate model '{fuel_name}' under the "
+            f"Fuel cache (~/.gz/fuel or ~/.ignition/fuel).")
+    name = slugify(name_override or fuel_name)
+    return _copy_model_dir(src, models_dir, name)
+
+
+def _find_fuel_model_dir(model_name):
+    """Find the newest cached Fuel model dir matching model_name (case-insensitive)."""
+    roots = [os.path.expanduser("~/.gz/fuel"), os.path.expanduser("~/.ignition/fuel")]
+    candidates = []
+    for root in roots:
+        if not os.path.isdir(root):
+            continue
+        for cfg in glob.glob(os.path.join(root, "**", "model.config"), recursive=True):
+            d = os.path.dirname(cfg)
+            # Fuel layout: .../models/<Name>/<version>/  -> match on either the
+            # version's parent dir name or its grandparent.
+            parts = d.split(os.sep)
+            if model_name.lower() in (p.lower() for p in parts[-3:]):
+                candidates.append((os.path.getmtime(cfg), d))
+    if not candidates:
+        return None
+    candidates.sort(reverse=True)
+    return candidates[0][1]
+
+
+def install_model_dir(path, models_dir, name_override):
+    if not (os.path.exists(os.path.join(path, "model.sdf"))
+            or os.path.exists(os.path.join(path, "model.config"))):
+        die(f"'{path}' is a directory but has no model.sdf/model.config. "
+            f"If it just contains a mesh, pass the mesh file directly.")
+    name = slugify(name_override or os.path.basename(os.path.normpath(path)))
+    return _copy_model_dir(path, models_dir, name)
+
+
+def install_mesh(path, models_dir, name_override):
+    name = slugify(name_override or os.path.splitext(os.path.basename(path))[0])
+    dest = _dest_dir(models_dir, name)
+    meshes_dir = os.path.join(dest, "meshes")
+    os.makedirs(meshes_dir, exist_ok=True)
+    mesh_file = os.path.basename(path)
+    shutil.copy2(path, os.path.join(meshes_dir, mesh_file))
+    _write_wrapper_sdf(dest, name, f"meshes/{mesh_file}")
+    info(f"installed (bare mesh, generated model.sdf wrapper) -> {dest}")
+    return dest, name
+
+
+def _dest_dir(models_dir, name):
+    dest = os.path.join(models_dir, name)
+    if os.path.exists(dest):
+        die(f"'{dest}' already exists. Use --name to choose a different name, "
+            f"or remove the existing folder.")
+    return dest
+
+
+def _copy_model_dir(src, models_dir, name):
+    dest = _dest_dir(models_dir, name)
+    shutil.copytree(src, dest)
+    info(f"installed -> {dest}")
+    return dest, name
+
+
+def _write_wrapper_sdf(dest, name, mesh_uri):
+    with open(os.path.join(dest, "model.sdf"), "w") as f:
+        f.write(f"""<?xml version="1.0"?>
+<sdf version="1.8">
+  <model name="{name}">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <geometry><mesh><uri>{mesh_uri}</uri></mesh></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><mesh><uri>{mesh_uri}</uri></mesh></geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>
+""")
+    with open(os.path.join(dest, "model.config"), "w") as f:
+        f.write(f"""<?xml version="1.0"?>
+<model>
+  <name>{name}</name>
+  <version>1.0</version>
+  <sdf version="1.8">model.sdf</sdf>
+  <description>Added by scripts/add-model</description>
+</model>
+""")
+
+
+# --------------------------------------------------------------------------- #
+# Measurement
+# --------------------------------------------------------------------------- #
+def find_primary_mesh(model_dir):
+    """Prefer a mesh referenced by model.sdf; else the first mesh file on disk."""
+    sdf = os.path.join(model_dir, "model.sdf")
+    if os.path.exists(sdf):
+        try:
+            for m in ET.parse(sdf).getroot().iter("uri"):
+                uri = (m.text or "").strip()
+                if uri.lower().endswith(MESH_EXTS):
+                    cand = os.path.join(model_dir, uri.split("://")[-1].split("/", 1)[-1]
+                                        if "://" in uri else uri)
+                    if os.path.exists(cand):
+                        return cand
+        except ET.ParseError:
+            pass
+    for ext in MESH_EXTS:
+        hits = sorted(glob.glob(os.path.join(model_dir, "**", f"*{ext}"), recursive=True))
+        if hits:
+            return hits[0]
+    return None
+
+
+def find_sdf_mesh_scale(model_dir):
+    """Return the <scale> on the model.sdf <mesh> as a 3-tuple, or None.
+
+    Gazebo applies this scale on top of the Collada unit, but our MoveIt loader
+    reads the raw .dae, so it must be carried into the snippet's "scale" or the
+    collision object ends up the wrong size."""
+    sdf = os.path.join(model_dir, "model.sdf")
+    if not os.path.exists(sdf):
+        return None
+    try:
+        root = ET.parse(sdf).getroot()
+    except ET.ParseError:
+        return None
+    for mesh in root.iter("mesh"):
+        sc = mesh.find("scale")
+        if sc is not None and sc.text:
+            vals = [float(x) for x in sc.text.split()]
+            if len(vals) == 1:
+                vals *= 3
+            if len(vals) == 3 and any(abs(v - 1.0) > 1e-9 for v in vals):
+                return tuple(vals)
+    return None
+
+
+def set_sdf_mesh_scale(model_dir, scale):
+    """Set (or add) <scale> on every <mesh> in the model's model.sdf and return
+    the count updated. This makes the Gazebo size (which comes from model.sdf via
+    <include>) match the config "scale" used for MoveIt. Only ever applied to our
+    private copy of the model under models/, so it doesn't affect anything else."""
+    sdf = os.path.join(model_dir, "model.sdf")
+    if not os.path.exists(sdf):
+        die(f"cannot set scale: no model.sdf in {model_dir}")
+    tree = ET.parse(sdf)
+    text = f"{scale[0]} {scale[1]} {scale[2]}"
+    n = 0
+    for mesh in tree.getroot().iter("mesh"):
+        sc = mesh.find("scale")
+        if sc is None:
+            sc = ET.SubElement(mesh, "scale")
+        sc.text = text
+        n += 1
+    if n == 0:
+        info("note: model.sdf has no <mesh> elements (primitive-based?); Gazebo size unchanged.")
+    tree.write(sdf, xml_declaration=True, encoding="utf-8")
+    return n
+
+
+def convert_gltf_to_obj(mesh_path):
+    """Gazebo Fortress can't load glTF (.glb/.gltf); convert to a sibling .obj
+    (texture/material preserved) and return its path, or None on failure. Vertex
+    coordinates are kept as-is, so any scale/rotation in the config still apply."""
+    try:
+        import trimesh
+    except Exception as e:
+        info(f"cannot convert glTF (trimesh missing: {e}; pip install trimesh)")
+        return None
+    out = os.path.splitext(mesh_path)[0] + ".obj"
+    try:
+        # include_normals=True is required or Gazebo's physics (dartsim) rejects
+        # the collision submeshes ("normal count [0]"); .mtl + texture still emit.
+        trimesh.load(mesh_path).export(out, include_normals=True)
+        return out
+    except Exception as e:
+        info(f"glTF -> OBJ conversion failed: {e}")
+        return None
+
+
+def rewrite_sdf_mesh_uri(model_dir, old_name, new_name):
+    """Repoint any model.sdf <uri> ending in old_name to new_name; return count."""
+    sdf = os.path.join(model_dir, "model.sdf")
+    if not os.path.exists(sdf):
+        return 0
+    tree = ET.parse(sdf)
+    n = 0
+    for uri in tree.getroot().iter("uri"):
+        t = uri.text or ""
+        if t.endswith(old_name):
+            uri.text = t[: -len(old_name)] + new_name
+            n += 1
+    if n:
+        tree.write(sdf, xml_declaration=True, encoding="utf-8")
+    return n
+
+
+def measure(mesh_path):
+    """Return (unit, (sx,sy,sz), min_z) in meters, or None if libs unavailable."""
+    try:
+        import numpy as np
+        import trimesh
+    except Exception as e:
+        info(f"(skipping measurement: {e}; install with 'pip install trimesh pycollada')")
+        return None
+    unit = 1.0
+    if mesh_path.lower().endswith(".dae"):
+        try:
+            import collada
+            unit = float(collada.Collada(mesh_path).assetInfo.unitmeter or 1.0)
+        except Exception:
+            pass
+    try:
+        tm = trimesh.load(mesh_path, force="mesh")
+        v = np.asarray(tm.vertices, dtype=float) * unit
+        mn, mx = v.min(axis=0), v.max(axis=0)
+        return unit, tuple(round(float(x), 4) for x in (mx - mn)), round(float(mn[2]), 4)
+    except Exception as e:
+        info(f"(could not measure mesh: {e})")
+        return None
+
+
+# --------------------------------------------------------------------------- #
+# Output
+# --------------------------------------------------------------------------- #
+def package_for(models_dir):
+    # models_dir = .../src/<pkg>/models  -> <pkg>
+    return os.path.basename(os.path.dirname(os.path.normpath(models_dir)))
+
+
+def build_snippet(name, pkg, model_rel, mesh_rel, resting_z):
+    # Scale is NOT written here: it lives in the model's own model.sdf (which
+    # Gazebo applies via <include> and scene_publisher reads for MoveIt), so the
+    # size has a single source of truth. Use --scale / resize-model to change it.
+    obj = {
+        "name": name,
+        "pose": [0.5, 0.0, resting_z, 0.0, 0.0, 0.0],
+        "include": f"package://{pkg}/{model_rel}",
+    }
+    if mesh_rel:
+        obj["mesh"] = f"package://{pkg}/{mesh_rel}"
+    return obj
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Install a model and print a static_objects snippet.")
+    ap.add_argument("source", help="Fuel URL, local model folder, or mesh file")
+    ap.add_argument("--name", help="override the model name (slugified)")
+    ap.add_argument("--into", metavar="CONFIG.json",
+                    help="append the snippet to this flat config's static_objects array")
+    ap.add_argument("--rabit-into", metavar="RABIT.json",
+                    help="attach a 'model' block to an entry in this RABIT "
+                         "(general-schema) config; requires --attach-to")
+    ap.add_argument("--attach-to", metavar="KEY",
+                    help="key of the passive_object or action-device instance to "
+                         "attach the model to (used with --rabit-into)")
+    ap.add_argument("--models-dir", default=DEFAULT_MODELS_DIR,
+                    help=f"where to install (default: {DEFAULT_MODELS_DIR})")
+    ap.add_argument("--scale", type=float, metavar="F",
+                    help="resize to F times the model's native size; edits the "
+                         "installed model.sdf (the single source of scale)")
+    args = ap.parse_args()
+
+    if args.rabit_into and not args.attach_to:
+        ap.error("--rabit-into requires --attach-to KEY")
+    if args.attach_to and not args.rabit_into:
+        ap.error("--attach-to is only used with --rabit-into")
+    if args.into and args.rabit_into:
+        ap.error("use either --into (flat config) or --rabit-into (RABIT config), not both")
+
+    models_dir = os.path.abspath(args.models_dir)
+    os.makedirs(models_dir, exist_ok=True)
+    pkg = package_for(models_dir)
+
+    kind = detect_source(args.source)
+    info(f"source: {kind}")
+    if kind == "fuel":
+        dest, name = install_fuel(args.source, models_dir, args.name)
+    elif kind == "model_dir":
+        dest, name = install_model_dir(args.source, models_dir, args.name)
+    else:
+        dest, name = install_mesh(args.source, models_dir, args.name)
+
+    model_rel = os.path.relpath(dest, WORKSPACE_ROOT).split(os.sep, 2)[-1]  # models/<name>
+    model_rel = os.path.join("models", name)
+
+    mesh_path = find_primary_mesh(dest)
+    # Gazebo Fortress can't render glTF, so convert any .glb/.gltf to .obj and
+    # repoint the model.sdf (and the mesh we measure / reference) at the .obj.
+    if mesh_path and mesh_path.lower().endswith((".glb", ".gltf")):
+        obj = convert_gltf_to_obj(mesh_path)
+        if obj:
+            rewrite_sdf_mesh_uri(dest, os.path.basename(mesh_path), os.path.basename(obj))
+            info(f"converted {os.path.basename(mesh_path)} -> {os.path.basename(obj)} "
+                 f"(Gazebo Fortress can't render glTF directly)")
+            mesh_path = obj
+        else:
+            info("WARNING: kept as glTF, which Gazebo Fortress will NOT render. "
+                 "Convert it to .obj/.dae (e.g. in Blender) and re-add.")
+    mesh_rel = os.path.relpath(mesh_path, dest) if mesh_path else None
+    if mesh_rel:
+        mesh_rel = os.path.join(model_rel, mesh_rel)
+
+    resting_z = 0.0
+    native = find_sdf_mesh_scale(dest)
+    if args.scale is not None:
+        base = native or (1.0, 1.0, 1.0)
+        sdf_scale = tuple(round(s * args.scale, 6) for s in base)
+        n = set_sdf_mesh_scale(dest, sdf_scale)
+        info(f"--scale {args.scale}: set model.sdf mesh scale to {sdf_scale} ({n} mesh element(s))")
+    else:
+        sdf_scale = native
+    m = measure(mesh_path) if mesh_path else None
+    if m:
+        unit, (sx, sy, sz), min_z = m
+        if sdf_scale:
+            sx, sy, sz = round(sx * sdf_scale[0], 4), round(sy * sdf_scale[1], 4), round(sz * sdf_scale[2], 4)
+            min_z = min_z * sdf_scale[2]
+        resting_z = round(-min_z, 4)
+        scale_note = f"  model.sdf scale: {sdf_scale}" if sdf_scale else ""
+        info(f"mesh: {os.path.basename(mesh_path)}  unit: {unit} m{scale_note}  "
+             f"size: {sx} x {sy} x {sz} m  resting Z: {resting_z}")
+        biggest = max(sx, sy, sz)
+        if biggest > 5.0 or biggest < 0.005:
+            info(f"WARNING: largest dimension is {biggest} m — units may be wrong; "
+                 f"consider editing the \"scale\" in the snippet.")
+    elif mesh_path is None:
+        info("no mesh file in this model (it's likely primitive-based). Gazebo will "
+             "render it via <include>, but MoveIt has no mesh to collide with — add a "
+             '"box"/"cylinder"/"sphere" to the snippet so the arm avoids it.')
+    else:
+        info("no measurement available; resting Z defaulted to 0.0 — verify it sits on the floor.")
+
+    snippet = build_snippet(name, pkg, model_rel, mesh_rel, resting_z)
+
+    if args.rabit_into:
+        # A RABIT entry already defines the object's name and placement (key /
+        # initial_location), so we only attach the geometry as a "model" block.
+        model_block = {"include": snippet["include"]}
+        if "mesh" in snippet:
+            model_block["mesh"] = snippet["mesh"]
+        where = _attach_into_rabit(args.rabit_into, args.attach_to, model_block)
+        info(f"attached model to '{args.attach_to}' ({where}) in {args.rabit_into}")
+        if resting_z:
+            info(f"tip: set that entry's initial_location.z to {resting_z} so it rests on the floor")
+    elif args.into:
+        _append_into(args.into, snippet)
+        info(f"appended '{name}' to {args.into} (static_objects)")
+    else:
+        print('\nPaste this into your config\'s "static_objects" (edit X/Y to place it):')
+        print(json.dumps(snippet, indent=2))
+
+
+def _append_into(config_path, snippet):
+    if not os.path.exists(config_path):
+        die(f"--into config not found: {config_path}")
+    with open(config_path) as f:
+        data = json.load(f)
+    data.setdefault("static_objects", []).append(snippet)
+    with open(config_path, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+
+
+def _attach_into_rabit(config_path, key, model_block):
+    """Set entry["model"] = model_block on the passive_object or action-device
+    instance whose "key" == key. Returns a short label of where it landed; dies
+    (listing the available keys) if no entry matches."""
+    if not os.path.exists(config_path):
+        die(f"--rabit-into config not found: {config_path}")
+    with open(config_path) as f:
+        data = json.load(f)
+
+    target = None
+    label = None
+    available = []
+    for obj in data.get("passive_objects") or []:
+        k = obj.get("key")
+        available.append(f"passive_object:{k}")
+        if k == key:
+            target, label = obj, "passive_object"
+    for dev in data.get("action_devices") or []:
+        for inst in dev.get("instances") or []:
+            k = inst.get("key")
+            available.append(f"instance:{k}")
+            if k == key:
+                target, label = inst, f"instance of {dev.get('class_name', dev.get('object_type', '?'))}"
+
+    if target is None:
+        listing = "\n  ".join(available) or "(none found)"
+        die(f"no passive_object or action-device instance with key '{key}' in "
+            f"{config_path}.\nAvailable keys:\n  {listing}")
+
+    if "model" in target:
+        info(f"note: '{key}' already had a model block; overwriting it")
+    target["model"] = model_block
+
+    with open(config_path, "w") as f:
+        json.dump(data, f, indent=2)
+        f.write("\n")
+    return label
+
+
+if __name__ == "__main__":
+    main()

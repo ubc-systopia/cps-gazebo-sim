@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""resize-model - Resize a model already installed under models/.
+
+It multiplies the model's current size by FACTOR by editing the installed
+model.sdf's <mesh><scale>. That model.sdf is the single source of scale: Gazebo
+applies it via <include> and scene_publisher.py reads it for the MoveIt collision
+mesh, so both stay in sync automatically -- no config edits needed.
+
+After running it, rebuild multi_arm_lab_sim_description (and relaunch); if the new
+size changes where the object should rest on the floor, adjust its pose Z in the
+config by hand.
+
+Usage:
+    scripts/resize-model <name> <factor>
+
+Examples:
+    scripts/resize-model thermoshaker 0.5
+    scripts/resize-model fuel_cone 1.5
+"""
+
+import argparse
+import os
+import sys
+import xml.etree.ElementTree as ET
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+WORKSPACE_ROOT = os.path.dirname(SCRIPT_DIR)
+DEFAULT_MODELS_DIR = os.path.join(
+    WORKSPACE_ROOT, "src", "multi_arm_lab_sim_description", "models"
+)
+
+
+def info(msg):
+    print(f"[resize-model] {msg}")
+
+
+def die(msg, code=1):
+    print(f"[resize-model] ERROR: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def find_sdf_mesh_scale(model_dir):
+    """Current <scale> on the model.sdf <mesh> as a 3-tuple (default (1,1,1))."""
+    sdf = os.path.join(model_dir, "model.sdf")
+    if os.path.exists(sdf):
+        try:
+            for mesh in ET.parse(sdf).getroot().iter("mesh"):
+                sc = mesh.find("scale")
+                if sc is not None and sc.text:
+                    vals = [float(x) for x in sc.text.split()]
+                    if len(vals) == 1:
+                        vals *= 3
+                    if len(vals) == 3:
+                        return tuple(vals)
+        except ET.ParseError:
+            pass
+    return (1.0, 1.0, 1.0)
+
+
+def set_sdf_mesh_scale(model_dir, scale):
+    """Set (or add) <scale> on every <mesh> in model.sdf; return count updated."""
+    sdf = os.path.join(model_dir, "model.sdf")
+    if not os.path.exists(sdf):
+        die(f"no model.sdf in {model_dir}")
+    tree = ET.parse(sdf)
+    text = f"{scale[0]} {scale[1]} {scale[2]}"
+    n = 0
+    for mesh in tree.getroot().iter("mesh"):
+        sc = mesh.find("scale")
+        if sc is None:
+            sc = ET.SubElement(mesh, "scale")
+        sc.text = text
+        n += 1
+    tree.write(sdf, xml_declaration=True, encoding="utf-8")
+    return n
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Resize an installed model (single source of scale: model.sdf).")
+    ap.add_argument("name", help="model name under models/")
+    ap.add_argument("factor", type=float, help="multiply current size by this")
+    ap.add_argument("--models-dir", default=DEFAULT_MODELS_DIR)
+    args = ap.parse_args()
+
+    if args.factor <= 0:
+        die("factor must be > 0")
+
+    model_dir = os.path.join(os.path.abspath(args.models_dir), args.name)
+    if not os.path.isdir(model_dir):
+        die(f"model not found: {model_dir}")
+
+    current = find_sdf_mesh_scale(model_dir)
+    new = tuple(round(c * args.factor, 6) for c in current)
+
+    n = set_sdf_mesh_scale(model_dir, new)
+    info(f"model.sdf: scale {current} -> {new} ({n} mesh element(s)) [drives both Gazebo and MoveIt]")
+
+    print()
+    info("done. Now rebuild and relaunch, e.g.:")
+    info("  colcon build --packages-select multi_arm_lab_sim_description")
+    info("(if the new size changes the resting height, adjust the object's pose Z in its config.)")
+
+
+if __name__ == "__main__":
+    main()
