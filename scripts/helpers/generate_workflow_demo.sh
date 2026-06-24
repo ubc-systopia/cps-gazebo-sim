@@ -18,7 +18,7 @@ Run WHILE the package is up (Gazebo + move_group):
 
     source /opt/ros/humble/setup.bash
     source install/setup.bash
-    python3 src/${PACKAGE_NAME}/scripts/workflow_demo.py
+    python3 src/generated/${PACKAGE_NAME}/scripts/workflow_demo.py
 
 Runs labelled tests and prints a PASS/FAIL summary:
   Part 1  smoke test       - bring all arms to home (is the pipeline alive?)

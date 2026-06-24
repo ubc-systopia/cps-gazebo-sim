@@ -3,7 +3,7 @@
 # config/robots.json, without going through the interactive create-ros-pkg CLI.
 #
 # Workflow:
-#   1. edit src/<pkg>/config/robots.json    (move arms, swap UR types, add/remove arms, ...)
+#   1. edit src/generated/<pkg>/config/robots.json   (move arms, swap UR types, add/remove arms, ...)
 #   2. ./scripts/regenerate-pkg <pkg>       (re-emits urdf/, config/, launch/, scripts/workflow_demo.py)
 #   3. colcon build --packages-select <pkg> && relaunch
 #
@@ -16,6 +16,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SRC_DIR="${WORKSPACE_ROOT}/src"
+# Generated packages live under src/generated/; fall back to src/ for any
+# package created before that layout existed.
+GENERATED_DIR="${SRC_DIR}/generated"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; BLUE='\033[0;34m'; YELLOW='\033[1;33m'; NC='\033[0m'
 info()    { echo -e "${BLUE}[INFO]${NC} $*"; }
@@ -27,12 +30,13 @@ usage() {
   cat <<EOF
 Usage: $(basename "$0") [--no-build] <package_name>
 
-Re-derives all generated files in src/<package_name>/ from that package's
-config/robots.json, then runs colcon build --packages-select <package_name>.
-Use --no-build to skip the build step (e.g. to inspect the regenerated files).
+Re-derives all generated files in src/generated/<package_name>/ from that
+package's config/robots.json, then runs colcon build --packages-select
+<package_name>. Use --no-build to skip the build step (e.g. to inspect the
+regenerated files).
 
 Example:
-  \$EDITOR src/diff_robots/config/robots.json
+  \$EDITOR src/generated/diff_robots/config/robots.json
   ./scripts/regenerate-pkg diff_robots
   # then: source install/setup.bash and relaunch
 EOF
@@ -50,7 +54,12 @@ for a in "$@"; do
 done
 if [ ${#ARGS[@]} -ne 1 ]; then usage; exit 2; fi
 PACKAGE_NAME="${ARGS[0]}"
-PKG_DIR="${SRC_DIR}/${PACKAGE_NAME}"
+PKG_DIR="${GENERATED_DIR}/${PACKAGE_NAME}"
+# Fall back to the old flat src/<pkg> location if it isn't under generated/.
+if [ ! -d "$PKG_DIR" ] && [ -d "${SRC_DIR}/${PACKAGE_NAME}" ]; then
+  PKG_DIR="${SRC_DIR}/${PACKAGE_NAME}"
+fi
+REL_PKG_DIR="${PKG_DIR#${WORKSPACE_ROOT}/}"
 ROBOTS_JSON="${PKG_DIR}/config/robots.json"
 
 # --- validation -------------------------------------------------------------
@@ -87,10 +96,10 @@ set -e
 # --- friendly warning about uncommitted edits in generated files -----------
 if command -v git >/dev/null 2>&1 && git -C "$WORKSPACE_ROOT" rev-parse >/dev/null 2>&1; then
   dirty=$(git -C "$WORKSPACE_ROOT" status --porcelain -- \
-    "src/${PACKAGE_NAME}/urdf" \
-    "src/${PACKAGE_NAME}/config" \
-    "src/${PACKAGE_NAME}/launch" \
-    "src/${PACKAGE_NAME}/scripts/workflow_demo.py" 2>/dev/null || true)
+    "${REL_PKG_DIR}/urdf" \
+    "${REL_PKG_DIR}/config" \
+    "${REL_PKG_DIR}/launch" \
+    "${REL_PKG_DIR}/scripts/workflow_demo.py" 2>/dev/null || true)
   if [ -n "$dirty" ]; then
     warn "Uncommitted changes in generated files for ${PACKAGE_NAME}:"
     echo "$dirty" | sed 's/^/        /'

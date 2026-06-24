@@ -8,6 +8,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SRC_DIR="${WORKSPACE_ROOT}/src"
+# Generated packages live under src/generated/ to keep them separate from the
+# hand-authored packages in src/. colcon discovers them recursively either way.
+GENERATED_DIR="${SRC_DIR}/generated"
 
 # Available UR robot types (from multi_ur_description/config)
 UR_TYPES=("ur3" "ur3e" "ur5" "ur5e" "ur10" "ur10e" "ur16e" "ur20" "ur30")
@@ -195,215 +198,6 @@ display_summary() {
     done
 }
 
-# Function to generate XACRO file
-generate_xacro_file() {
-  local num_robots=$1
-  local package_name=$2
-  local pkg_dir=$3
-    
-  local xacro_file="${pkg_dir}/urdf/${package_name}.urdf.xacro"
-    
-    print_info "Generating XACRO file: $xacro_file"
-    
-    # Create XACRO header
-    cat > "$xacro_file" << 'EOF'
-<?xml version="1.0"?>
-<robot xmlns:xacro="http://wiki.ros.org/xacro" name="multi_arm">
-  <!-- declare arguments -->
-EOF
-
-    # Add arguments for each robot
-    for ((i=1; i<=num_robots; i++)); do
-        local index=$((i-1))
-        cat >> "$xacro_file" << EOF
-  <xacro:arg name="robot${i}_ur_type" default="${ROBOT_UR_TYPES[$index]}"/>
-  <xacro:arg name="robot${i}_x" default="${ROBOT_X_POSITIONS[$index]}"/>
-  <xacro:arg name="robot${i}_y" default="${ROBOT_Y_POSITIONS[$index]}"/>
-  <xacro:arg name="robot${i}_z" default="${ROBOT_Z_POSITIONS[$index]}"/>
-  <xacro:arg name="robot${i}_yaw" default="${ROBOT_YAWS[$index]}"/>
-EOF
-    done
-
-    # Add world link and include ur_macro
-    cat >> "$xacro_file" << 'EOF'
-
-  <!-- world reference frame -->
-  <link name="world"/>
-
-  <!-- include the core URDF macro definitions -->
-  <xacro:include filename="$(find multi_ur_description)/urdf/ur_macro.xacro"/>
-
-  <!-- Unified ros2_control for all arms -->
-  <ros2_control name="multi_arm_controller_manager" type="system">
-    <hardware>
-      <plugin>ign_ros2_control/IgnitionSystem</plugin>
-    </hardware>
-EOF
-
-    # Add ros2_control joints for each robot
-    for ((i=1; i<=num_robots; i++)); do
-        local index=$((i-1))
-        cat >> "$xacro_file" << EOF
-    <!-- Robot $i joints -->
-    <joint name="robot${i}_shoulder_pan_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <param name="initial_value">${ROBOT_SHOULDER_PANS[$index]}</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="robot${i}_shoulder_lift_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <param name="initial_value">${ROBOT_SHOULDER_LIFTS[$index]}</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="robot${i}_elbow_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <param name="initial_value">${ROBOT_ELBOWS[$index]}</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="robot${i}_wrist_1_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <param name="initial_value">${ROBOT_WRIST_1S[$index]}</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="robot${i}_wrist_2_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <param name="initial_value">${ROBOT_WRIST_2S[$index]}</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-    <joint name="robot${i}_wrist_3_joint">
-      <command_interface name="position"/>
-      <command_interface name="velocity"/>
-      <state_interface name="position">
-        <param name="initial_value">${ROBOT_WRIST_3S[$index]}</param>
-      </state_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="effort"/>
-    </joint>
-EOF
-    done
-
-    # Close ros2_control section
-    cat >> "$xacro_file" << 'EOF'
-  </ros2_control>
-
-EOF
-
-    # Add robot instances
-    for ((i=1; i<=num_robots; i++)); do
-        cat >> "$xacro_file" << EOF
-  <!-- Robot $i instance -->
-  <xacro:ur_robot
-    name="robot$i"
-    tf_prefix="robot${i}_"
-    parent="world"
-    joint_limits_parameters_file="\$(find multi_ur_description)/config/\$(arg robot${i}_ur_type)/joint_limits.yaml"
-    kinematics_parameters_file="\$(find multi_ur_description)/config/\$(arg robot${i}_ur_type)/default_kinematics.yaml"
-    physical_parameters_file="\$(find multi_ur_description)/config/\$(arg robot${i}_ur_type)/physical_parameters.yaml"
-    visual_parameters_file="\$(find multi_ur_description)/config/\$(arg robot${i}_ur_type)/visual_parameters.yaml"
-    generate_ros2_control_tag="false"
-    sim_gazebo="false"
-    sim_ignition="true">
-    <origin xyz="\$(arg robot${i}_x) \$(arg robot${i}_y) \$(arg robot${i}_z)" rpy="0 0 \$(arg robot${i}_yaw)"/>
-  </xacro:ur_robot>
-
-EOF
-    done
-
-    # Add gazebo plugin
-    cat >> "$xacro_file" << EOF
-  <gazebo>
-    <plugin filename="libign_ros2_control-system.so" name="ign_ros2_control::IgnitionROS2ControlPlugin">
-      <parameters>$(find ${package_name})/config/controllers.yaml</parameters>
-    </plugin>
-  </gazebo>
-
-</robot>
-EOF
-
-    print_success "XACRO file generated successfully!"
-}
-
-# Function to render XACRO from helpers template (supports 2 robots)
-render_template_xacro() {
-  local num_robots=$1
-  local package_name=$2
-  local pkg_dir=$3
-
-  local template_file="${SCRIPT_DIR}/helpers/robot_description_template.xacro"
-  local out_file="${pkg_dir}/urdf/${package_name}.urdf.xacro"
-
-  if [ ! -f "$template_file" ]; then
-    print_warning "Template not found at $template_file. Falling back to generated XACRO."
-    generate_xacro_file "$num_robots" "$package_name" "$pkg_dir"
-    return
-  fi
-
-  print_info "Rendering template XACRO from: $template_file"
-  cp "$template_file" "$out_file"
-
-  # Gather robot parameters (supports exactly 2 robots of the same type)
-  local x1="${ROBOT_X_POSITIONS[0]}"; local y1="${ROBOT_Y_POSITIONS[0]}"; local z1="${ROBOT_Z_POSITIONS[0]}"; local yaw1="${ROBOT_YAWS[0]}"
-  local x2="${ROBOT_X_POSITIONS[1]}"; local y2="${ROBOT_Y_POSITIONS[1]}"; local z2="${ROBOT_Z_POSITIONS[1]}"; local yaw2="${ROBOT_YAWS[1]}"
-  local type1="${ROBOT_UR_TYPES[0]}"; local type2="${ROBOT_UR_TYPES[1]}"
-
-  if [ "$num_robots" -ne 2 ] || [ "$type1" != "$type2" ]; then
-    print_warning "Template supports exactly 2 robots of the same type. Falling back to generated XACRO."
-    generate_xacro_file "$num_robots" "$package_name" "$pkg_dir"
-    return
-  fi
-
-  # Fix top-level robot name typo if present
-  sed -i -E 's/name="mutli_arm"/name="multi_arm"/' "$out_file"
-
-  # Update joint names to match robot1_/robot2_ convention
-  sed -i -E 's/arm1shoulder_pan_joint/robot1_shoulder_pan_joint/g' "$out_file"
-  sed -i -E 's/arm1shoulder_lift_joint/robot1_shoulder_lift_joint/g' "$out_file"
-  sed -i -E 's/arm1elbow_joint/robot1_elbow_joint/g' "$out_file"
-  sed -i -E 's/arm1wrist_1_joint/robot1_wrist_1_joint/g' "$out_file"
-  sed -i -E 's/arm1wrist_2_joint/robot1_wrist_2_joint/g' "$out_file"
-  sed -i -E 's/arm1wrist_3_joint/robot1_wrist_3_joint/g' "$out_file"
-  sed -i -E 's/arm2_/robot2_/g' "$out_file"
-
-  # Update ur_robot names and tf_prefixes
-  sed -i -E '0,/<xacro:ur_robot/s/name="arm1"/name="robot1"/' "$out_file"
-  sed -i -E '0,/<xacro:ur_robot/s/tf_prefix="arm1"/tf_prefix="robot1_"/' "$out_file"
-  # Change the remaining occurrence of name="arm1" to robot2
-  sed -i -E 's/(<xacro:ur_robot[^>]*name=")arm1"/\1robot2"/' "$out_file"
-  sed -i -E 's/tf_prefix="arm2_"/tf_prefix="robot2_"/' "$out_file"
-
-  # Replace origins for both robots with provided positions and yaw
-  sed -i -E "0,/<origin xyz=\"0 0 \$\(arg z\)\" rpy=\"0 0 \$\(arg Y\)\"\/>/s//<origin xyz=\"${x1} ${y1} ${z1}\" rpy=\"0 0 ${yaw1}\"\/>/" "$out_file"
-  sed -i -E "s|<origin xyz=\"0.2 0.2 \$\(arg z\)\" rpy=\"0 0 \$\(arg Y\)\"/>|<origin xyz=\"${x2} ${y2} ${z2}\" rpy=\"0 0 ${yaw2}\"/>|" "$out_file"
-
-  # Set default UR type arg to the selected type
-  sed -i -E "s|(<xacro:arg name=\"ur_type\"\s+default=\")[^\"]+(\"/?>)|\1${type1}\2|" "$out_file"
-
-  # Update Gazebo controllers path to point at this package's controllers.yaml
-  sed -i -E "s|\$\(find two_arm_moveit_config\)/config/multi_arm_controllers.yaml|\$\(find ${package_name}\)/config/controllers.yaml|" "$out_file"
-
-  print_success "Template XACRO rendered: $out_file"
-}
-
 # Expand a XACRO file into a URDF file.
 # NON-FATAL: a brand-new package's main XACRO contains a self-reference
 # ($(find <pkg>)/config/controllers.yaml) that cannot resolve until the package
@@ -524,8 +318,8 @@ Usage: $(basename "$0") [--no-build]                          # interactive
 By default the script also runs colcon build for the new package. Pass
 --no-build to generate the files only.
 
---from-json takes a flat diff_robots.json-style spec (see configs/diff_robots.json).
---rabit takes a general-schema lab config (see configs/rabit-config-2.json); it is
+--from-json takes a flat diff_robots.json-style spec (see configs/examples/simulator-schema/diff_robots.json).
+--rabit takes a general-schema lab config (see configs/examples/rabit-schema/rabit-config-2.json); it is
 translated to the diff_robots format via scripts/translate-config and then used
 exactly like --from-json. The two flags are mutually exclusive.
 EOF
@@ -627,13 +421,13 @@ EOF
     fi
 
     # ---- Common generation path ------------------------------------------
-    print_info "Creating package structure under src..."
-    
-  # Ensure src directory exists
-  mkdir -p "${SRC_DIR}"
-    
-  # Define package directory inside src
-  local PKG_DIR="${SRC_DIR}/${package_name}"
+    print_info "Creating package structure under src/generated..."
+
+  # Ensure the generated-packages directory exists
+  mkdir -p "${GENERATED_DIR}"
+
+  # Define package directory inside src/generated
+  local PKG_DIR="${GENERATED_DIR}/${package_name}"
     
   # Create directories
   mkdir -p "${PKG_DIR}/urdf"
@@ -700,38 +494,10 @@ EOF
     exit 1
   fi
     
-    # Create package.xml
-  cat > "${PKG_DIR}/package.xml" << EOF
-<?xml version="1.0"?>
-<package format="3">
-  <name>${package_name}</name>
-  <version>0.0.1</version>
-  <description>Multi-robot description package for ${package_name}</description>
-  <maintainer email="user@example.com">User</maintainer>
-  <license>Apache-2.0</license>
-
-  <buildtool_depend>ament_cmake</buildtool_depend>
-  
-  <depend>urdf</depend>
-  <depend>xacro</depend>
-  <depend>robot_state_publisher</depend>
-  <depend>joint_state_publisher</depend>
-  <depend>multi_ur_description</depend>
-  <exec_depend>multi_arm_control</exec_depend>
-  <exec_depend>pick_ik</exec_depend>
-  <exec_depend>rclpy</exec_depend>
-  <exec_depend>moveit_msgs</exec_depend>
-  <exec_depend>shape_msgs</exec_depend>
-  <exec_depend>geometry_msgs</exec_depend>
-
-  <test_depend>ament_lint_auto</test_depend>
-  <test_depend>ament_lint_common</test_depend>
-
-  <export>
-    <build_type>ament_cmake</build_type>
-  </export>
-</package>
-EOF
+    # package.xml is written earlier by helpers/generate_package_xml.sh (the single
+    # authoritative writer); no inline overwrite here so its full dependency set
+    # (MoveIt, RViz, controllers, the scene_publisher runtime deps, and the
+    # multi_arm_lab_sim_description model library) is preserved.
 
     # Create CMakeLists.txt
   cat > "${PKG_DIR}/CMakeLists.txt" << EOF
@@ -790,7 +556,7 @@ EOF
     print_info "Next steps:"
     echo "  source install/setup.bash                          # if not already"
     echo "  ./scripts/launch-wrappers/launch_${package_name}              # Gazebo + move_group (+ RViz if launch_rviz=true)"
-    echo "  python3 src/${package_name}/scripts/workflow_demo.py   # run the demo workflow"
+    echo "  python3 src/generated/${package_name}/scripts/workflow_demo.py   # run the demo workflow"
     echo ""
     print_success "Done!"
 }
