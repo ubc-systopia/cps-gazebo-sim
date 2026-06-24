@@ -1,0 +1,15 @@
+initial_positions:
+  vx300s:
+    vx300s_shoulder_pan_joint: 0.0
+    vx300s_shoulder_lift_joint: -1.5708
+    vx300s_elbow_joint: 0.0
+    vx300s_wrist_1_joint: -1.5708
+    vx300s_wrist_2_joint: 0.0
+    vx300s_wrist_3_joint: 0.0
+  arm_169_254_200_200:
+    arm_169_254_200_200_shoulder_pan_joint: 0.0
+    arm_169_254_200_200_shoulder_lift_joint: -1.5708
+    arm_169_254_200_200_elbow_joint: 0.0
+    arm_169_254_200_200_wrist_1_joint: -1.5708
+    arm_169_254_200_200_wrist_2_joint: 0.0
+    arm_169_254_200_200_wrist_3_joint: 0.0

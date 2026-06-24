@@ -18,6 +18,14 @@
       "description": "Whether the generated demo.launch.py should start RViz",
       "type": "boolean"
     },
+    "avoid_ground": {
+      "description": "Add a floor collision plane to the MoveIt planning scene so the arm won't plan through z<0. Default true.",
+      "type": "boolean"
+    },
+    "ground_level": {
+      "description": "Height (metres) of the floor collision plane (its top sits 2 cm below this). Default 0.0.",
+      "type": "number"
+    },
     "static_objects": {
       "description": "Static (immovable) objects spawned into the Gazebo world. Rendered into config/world.sdf by generate_world_sdf.sh and loaded by demo.launch.py.",
       "type": "array",
@@ -62,8 +70,24 @@
             "properties": { "radius": { "type": "number" } }
           },
           "include": {
-            "description": "package:// URI of a reusable Gazebo model (alternative to a primitive geometry)",
+            "description": "package:// or model:// URI of a reusable Gazebo model, used for the Gazebo visual. May be combined with 'mesh' (which then provides the MoveIt collision geometry).",
             "type": "string"
+          },
+          "mesh": {
+            "description": "package:// or file:// path to a mesh file (.dae/.stl/.obj) loaded as the MoveIt collision geometry, so the arm plans around the true shape. Typically paired with 'include' for the Gazebo visual.",
+            "type": "string"
+          },
+          "scale": {
+            "description": "Optional scale (single number or [sx, sy, sz]) for a BARE mesh that has no owning model (no 'include'). When the mesh belongs to a model (the usual include+mesh case) scale is read from that model's model.sdf instead -- the single source of truth that Gazebo and MoveIt both use -- and this field is ignored; resize it with scripts/resize-model.",
+            "oneOf": [
+              { "type": "number" },
+              {
+                "type": "array",
+                "items": { "type": "number" },
+                "minItems": 3,
+                "maxItems": 3
+              }
+            ]
           }
         }
       }

@@ -115,5 +115,71 @@
       "description": "Base roll about X in radians (R for ROS base_coordinates)",
       "type": "number"
     }
+  },
+  {
+    "op": "add",
+    "path": "/properties/avoid_ground",
+    "value": {
+      "description": "Add a floor collision plane to the MoveIt planning scene so the arm won't plan through z<0. Default true.",
+      "type": "boolean"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/properties/ground_level",
+    "value": {
+      "description": "Height (metres) of the floor collision plane (its top sits 2 cm below this). Default 0.0.",
+      "type": "number"
+    }
+  },
+  {
+    "op": "add",
+    "path": "/properties/passive_objects/items/properties/model",
+    "value": {
+      "description": "Optional 3D model reference for the generated static_object. When present it renders this model in Gazebo (include) and/or uses its mesh for MoveIt collision instead of the primitive shape. Populated e.g. by scripts/add-model.",
+      "type": "object",
+      "properties": {
+        "include": {
+          "description": "package:// or model:// URI of a reusable Gazebo model (Gazebo visual)",
+          "type": "string"
+        },
+        "mesh": {
+          "description": "package:// or file:// path to a mesh (.dae/.stl/.obj) used as the MoveIt collision geometry",
+          "type": "string"
+        },
+        "scale": {
+          "description": "Mesh scale: a single number (uniform) or [sx, sy, sz]",
+          "oneOf": [
+            { "type": "number" },
+            { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "op": "add",
+    "path": "/properties/action_devices/items/properties/instances/items/properties/model",
+    "value": {
+      "description": "Optional 3D model reference for the generated static_object. When present it renders this model in Gazebo (include) and/or uses its mesh for MoveIt collision instead of the primitive shape. Populated e.g. by scripts/add-model.",
+      "type": "object",
+      "properties": {
+        "include": {
+          "description": "package:// or model:// URI of a reusable Gazebo model (Gazebo visual)",
+          "type": "string"
+        },
+        "mesh": {
+          "description": "package:// or file:// path to a mesh (.dae/.stl/.obj) used as the MoveIt collision geometry",
+          "type": "string"
+        },
+        "scale": {
+          "description": "Mesh scale: a single number (uniform) or [sx, sy, sz]",
+          "oneOf": [
+            { "type": "number" },
+            { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 }
+          ]
+        }
+      }
+    }
   }
 ]

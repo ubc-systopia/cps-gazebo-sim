@@ -1,0 +1,26 @@
+{
+  "launch_rviz": true,
+  "static_objects": [{"name": "fuel_cone", "pose": [0.5, 0.0, 0.0, 0.0, 0.0, 0.0], "include": "package://multi_arm_lab_sim_description/models/fuel_cone", "mesh": "package://multi_arm_lab_sim_description/models/fuel_cone/meshes/construction_cone.dae", "scale": 10}, {"name": "thermoshaker", "pose": [0.3, 0.5, 0.1925, 0.0, 0.0, 0.0], "include": "package://multi_arm_lab_sim_description/models/thermoshaker", "mesh": "package://multi_arm_lab_sim_description/models/thermoshaker/meshes/thermoshaker.dae"}, {"name": "beaker", "pose": [-0.5, 0.0, 0.0, 1.5708, 0.0, 0.0], "include": "package://multi_arm_lab_sim_description/models/beaker", "mesh": "package://multi_arm_lab_sim_description/models/beaker/meshes/beaker.obj", "scale": 0.018}],
+  "robot_arms": [
+    {
+      "key": "robot1",
+      "model": "ur5",
+      "base_coordinates": {
+        "x": "0",
+        "y": "0",
+        "z": "0",
+        "R": "0",
+        "P": "0",
+        "Y": "0"
+      },
+      "initial_joints": {
+        "shoulder_pan": "0",
+        "shoulder_lift": "-1.57",
+        "elbow": "0",
+        "wrist_1": "-1.57",
+        "wrist_2": "0",
+        "wrist_3": "0"
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+moveit_simple_controller_manager:
+  controller_names:
+    - vx300s_joint_trajectory_controller
+    - arm_169_254_200_200_joint_trajectory_controller
+  vx300s_joint_trajectory_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+      - vx300s_shoulder_pan_joint
+      - vx300s_shoulder_lift_joint
+      - vx300s_elbow_joint
+      - vx300s_wrist_1_joint
+      - vx300s_wrist_2_joint
+      - vx300s_wrist_3_joint
+  arm_169_254_200_200_joint_trajectory_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints:
+      - arm_169_254_200_200_shoulder_pan_joint
+      - arm_169_254_200_200_shoulder_lift_joint
+      - arm_169_254_200_200_elbow_joint
+      - arm_169_254_200_200_wrist_1_joint
+      - arm_169_254_200_200_wrist_2_joint
+      - arm_169_254_200_200_wrist_3_joint

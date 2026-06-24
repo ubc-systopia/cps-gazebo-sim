@@ -1,0 +1,7 @@
+
+#!/bin/bash
+# Launch script for mesh_objects_demo
+
+colcon build
+source install/setup.bash
+ros2 launch mesh_objects_demo demo.launch.py
