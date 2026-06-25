@@ -45,10 +45,11 @@ fi
 # ---------------------------------------------------------------------------
 log "Configuring UTF-8 locale..."
 sudo apt update
-sudo apt install -y locales
+sudo apt install -y locales git curl
 sudo locale-gen en_US en_US.UTF-8
 sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
 export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 
 # ---------------------------------------------------------------------------
 # 2. ROS 2 Humble (desktop) + development tools.
@@ -63,7 +64,11 @@ if ! dpkg-query -W -f='${Status}' "ros-${ROS_DISTRO}-desktop" 2>/dev/null | grep
     log "Adding the ROS 2 apt repository..."
     ROS_APT_SOURCE_VERSION="$(curl -s https://api.github.com/repos/ros-infrastructure/ros-apt-source/releases/latest \
         | grep -F '"tag_name"' | awk -F\" '{print $4}')"
-    curl -L -o /tmp/ros2-apt-source.deb \
+    if [ -z "${ROS_APT_SOURCE_VERSION}" ]; then
+        warn "Could not determine ros-apt-source version (GitHub API rate-limited?). Aborting."
+        exit 1
+    fi
+    curl -fL -o /tmp/ros2-apt-source.deb \
         "https://github.com/ros-infrastructure/ros-apt-source/releases/download/${ROS_APT_SOURCE_VERSION}/ros2-apt-source_${ROS_APT_SOURCE_VERSION}.$(. /etc/os-release && echo "$VERSION_CODENAME")_all.deb"
     sudo dpkg -i /tmp/ros2-apt-source.deb
 
@@ -92,7 +97,7 @@ rosdep update
 if ! dpkg-query -W -f='${Status}' ignition-fortress 2>/dev/null | grep -q "install ok installed"; then
     log "Installing Gazebo Fortress (Ignition)..."
     sudo apt install -y lsb-release gnupg
-    sudo curl -sSL https://packages.osrfoundation.org/gazebo.gpg \
+    sudo curl -fsSL https://packages.osrfoundation.org/gazebo.gpg \
         --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] https://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" \
         | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null
@@ -123,9 +128,10 @@ sudo apt install -y \
 # 6. Python tooling for the scripts/ commands.
 #    add-model / resize-model measure and convert meshes with trimesh.
 # ---------------------------------------------------------------------------
-log "Installing Python tooling for scripts/ (trimesh, numpy)..."
+log "Installing Python tooling for scripts/ (trimesh, numpy, pycollada) and dev tools (pre-commit)..."
 sudo apt install -y python3-pip
-pip3 install --user trimesh numpy
+pip3 install --user trimesh numpy pycollada
+pip3 install --user -r requirements.dev.txt
 
 # ---------------------------------------------------------------------------
 # 7. Source ROS so colcon / rosdep / vcs see the distro.
@@ -169,18 +175,40 @@ log "Building the colcon workspace (this can take several minutes)..."
 colcon build --symlink-install
 
 # ---------------------------------------------------------------------------
+# 11. Persist ROS source in ~/.bashrc so every new shell has ROS in PATH.
+# ---------------------------------------------------------------------------
+ROS_SOURCE_LINE="source /opt/ros/${ROS_DISTRO}/setup.bash"
+if ! grep -qF "${ROS_SOURCE_LINE}" "${HOME}/.bashrc"; then
+    log "Adding ROS ${ROS_DISTRO} source line to ~/.bashrc..."
+    echo "" >> "${HOME}/.bashrc"
+    echo "# ROS 2 ${ROS_DISTRO} — added by cps-gazebo-sim setup.sh" >> "${HOME}/.bashrc"
+    echo "${ROS_SOURCE_LINE}" >> "${HOME}/.bashrc"
+else
+    log "ROS ${ROS_DISTRO} source line already in ~/.bashrc. Skipping."
+fi
+
+LOCAL_BIN_LINE='export PATH="${HOME}/.local/bin:${PATH}"'
+if ! grep -qF '.local/bin' "${HOME}/.bashrc"; then
+    log "Adding ~/.local/bin to PATH in ~/.bashrc..."
+    echo "${LOCAL_BIN_LINE}" >> "${HOME}/.bashrc"
+fi
+export PATH="${HOME}/.local/bin:${PATH}"
+
+# ---------------------------------------------------------------------------
 # Done.
 # ---------------------------------------------------------------------------
 cat <<EOF
 
 [setup] Setup complete.
 
-To use the workspace in a new shell, source ROS and the local overlay:
+To use the workspace in a new shell, source the local overlay:
 
-    source /opt/ros/${ROS_DISTRO}/setup.bash
     source ${WORKSPACE_ROOT}/install/setup.bash
 
-Tip: add the first line to your ~/.bashrc so every shell has ROS available.
+ROS 2 ${ROS_DISTRO} has been added to ~/.bashrc and is available in every new
+shell. Re-source your current shell with:
+
+    source ~/.bashrc
 
 Next steps:
     scripts/launch-wrappers/launch_diff_robots     # launch a demo
